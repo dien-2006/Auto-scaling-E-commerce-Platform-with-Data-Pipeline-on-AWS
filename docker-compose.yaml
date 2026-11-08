@@ -1,0 +1,58 @@
+
+services:
+  # ============================================================
+  # 1. MARKETPLACE POSTGRESQL DATABASE
+  # ============================================================
+  postgres:
+    image: postgres:${POSTGRES_VERSION:-16}
+    container_name: marketplace_postgres
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-marketplace_db}
+      POSTGRES_USER: ${POSTGRES_USER:-marketplace_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      TZ: ${TZ:-Asia/Ho_Chi_Minh}
+      PGTZ: ${TZ:-Asia/Ho_Chi_Minh}
+
+    command:
+      - postgres
+      - -c
+      - timezone=${TZ:-Asia/Ho_Chi_Minh}
+
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+
+    volumes:
+      - marketplace_postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+    networks:
+      - marketplace_network
+
+# ============================================================
+# VOLUMES
+# ============================================================
+volumes:
+  marketplace_postgres_data:
+    name: marketplace_postgres_data
+
+# ============================================================
+# NETWORKS
+# ============================================================
+networks:
+  marketplace_network:
+    name: marketplace_network
+    driver: bridge
