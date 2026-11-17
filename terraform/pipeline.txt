@@ -1,0 +1,13 @@
+Thứ tự	File / Module	Mục đích
+1	providers.tf	Cấu hình AWS Provider
+2	variables.tf	Khai báo biến
+3	terraform.tfvars	Gán giá trị
+4	backend.tf	Lưu Terraform State
+5	locals.tf	Tập trung tên, tags, cấu hình dùng chung
+6	main.tf	Gọi các module
+7	modules/network/	Xây dựng VPC, Subnets, NAT, Routes
+8	modules/security/	Security Groups, IAM
+9	modules/kubernetes/	EC2, Auto Scaling Group
+10	modules/database/	RDS PostgreSQL
+11	modules/storage/	S3
+12	modules/etl/	Lambda, Glue, Athena

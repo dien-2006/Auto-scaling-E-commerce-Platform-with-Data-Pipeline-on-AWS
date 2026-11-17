@@ -1,0 +1,17 @@
+# Install only after validating the target kubeadm cluster.
+cloudProvider: aws
+awsRegion: ap-southeast-1
+autoDiscovery:
+  clusterName: ecommerce-dev-k8s
+# The chart image must match Kubernetes minor version (e.g. v1.34.x for v1.34).
+# Pin the matching image tag and chart version when deploying.
+extraArgs:
+  balance-similar-node-groups: 'true'
+  skip-nodes-with-system-pods: 'false'
+resources:
+  requests:
+    cpu: 100m
+    memory: 300Mi
+  limits:
+    cpu: 300m
+    memory: 600Mi

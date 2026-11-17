@@ -91,3 +91,26 @@ tmp/
 temp/
 .cache/
 *.tmp
+
+
+# Terraform variable files
+**/terraform.tfvars
+**/*.auto.tfvars
+**/*.tfvars.json
+
+# Terraform state
+**/*.tfstate
+**/*.tfstate.*
+**/.terraform/
+
+# Terraform crash logs
+crash.log
+crash.*.log
+
+# Terraform plan files
+*.tfplan
+
+etl/.env
+etl/.venv/
+**/__pycache__/
+*.pyc

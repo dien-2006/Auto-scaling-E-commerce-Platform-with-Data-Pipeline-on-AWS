@@ -1,0 +1,15 @@
+namespace: coco
+resources:
+  - ../../base
+configMapGenerator:
+  - name: coco-backend-config
+    literals:
+      - NODE_ENV=development
+      - PORT=3000
+images:
+  - name: coco-frontend
+    newName: ACCOUNT_ID.dkr.ecr.ap-southeast-1.amazonaws.com/ecommerce/dev/frontend
+    newTag: v1.0.0
+  - name: coco-backend
+    newName: ACCOUNT_ID.dkr.ecr.ap-southeast-1.amazonaws.com/ecommerce/dev/backend
+    newTag: v1.0.0

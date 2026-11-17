@@ -1,0 +1,4 @@
+aws_region = "ap-southeast-1"
+
+# Required for the existing production HTTPS listener:
+# acm_certificate_arn = "arn:aws:acm:ap-southeast-1:ACCOUNT_ID:certificate/CERTIFICATE_ID"

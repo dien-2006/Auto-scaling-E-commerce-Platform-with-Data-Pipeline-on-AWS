@@ -1,0 +1,15 @@
+cloudProvider: aws
+awsRegion: ap-southeast-1
+autoDiscovery:
+  clusterName: ecommerce-prod-k8s
+# Pin chart and autoscaler image to matching Kubernetes minor version.
+extraArgs:
+  balance-similar-node-groups: 'true'
+  skip-nodes-with-system-pods: 'false'
+resources:
+  requests:
+    cpu: 100m
+    memory: 300Mi
+  limits:
+    cpu: 300m
+    memory: 600Mi

@@ -1,0 +1,31 @@
+
+# Wait for the control plane to publish a join command
+
+JOIN_CMD=""
+
+for attempt in $(seq 1 120); do
+  JOIN_CMD=$(aws ssm get-parameter \
+    --region "${aws_region}" \
+    --name "${join_parameter_name}" \
+    --with-decryption \
+    --query "Parameter.Value" \
+    --output text 2>/dev/null) || true
+
+  if [[ "$JOIN_CMD" == kubeadm\ join* ]]; then
+    break
+  fi
+
+  JOIN_CMD=""
+  sleep 15
+done
+
+if [[ -z "$JOIN_CMD" ]]; then
+  echo "No Kubernetes join command available"
+  exit 1
+fi
+
+# Join worker to Kubernetes cluster
+$JOIN_CMD \
+  --cri-socket unix:///run/containerd/containerd.sock
+
+echo "Worker joined Kubernetes cluster"

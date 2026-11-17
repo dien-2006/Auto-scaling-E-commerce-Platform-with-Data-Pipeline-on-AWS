@@ -1,4 +1,14 @@
+<<<<<<< HEAD
 
+=======
+-- MARKETPLACE DATABASE STRUCTURE - PostgreSQL 16
+-- Docker .env: POSTGRES_DB=marketplace_db, POSTGRES_USER=marketplace_user
+-- Connect to the EXISTING marketplace_db before running.
+-- This script does NOT create/drop a database or delete existing data.
+-- Creates all objects explicitly in schema marketplace (not public).
+-- Note: if objects already exist inside marketplace, CREATE TABLE will stop
+-- and the transaction will roll back rather than overwrite them.
+>>>>>>> infa/terraform
 
 BEGIN;
 
@@ -212,6 +222,7 @@ CREATE TRIGGER trg_products_updated_at BEFORE UPDATE ON marketplace.products FOR
 CREATE TRIGGER trg_inventory_updated_at BEFORE UPDATE ON marketplace.inventory FOR EACH ROW EXECUTE FUNCTION marketplace.set_updated_at();
 CREATE TRIGGER trg_carts_updated_at BEFORE UPDATE ON marketplace.carts FOR EACH ROW EXECUTE FUNCTION marketplace.set_updated_at();
 CREATE TRIGGER trg_shop_orders_updated_at BEFORE UPDATE ON marketplace.shop_orders FOR EACH ROW EXECUTE FUNCTION marketplace.set_updated_at();
+<<<<<<< HEAD
 
 
 -- 13. Audit logs (actor_user_id is provided by trusted application context)
@@ -394,5 +405,7 @@ CREATE INDEX idx_shipment_tracking_shipment ON marketplace.shipment_tracking(shi
 
 CREATE TRIGGER trg_reviews_updated_at BEFORE UPDATE ON marketplace.product_reviews
     FOR EACH ROW EXECUTE FUNCTION marketplace.set_updated_at();
+=======
+>>>>>>> infa/terraform
 
 COMMIT;
