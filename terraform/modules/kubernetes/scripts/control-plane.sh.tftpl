@@ -1,0 +1,63 @@
+
+# Initialize Kubernetes control plane
+kubeadm init \
+  --control-plane-endpoint "$(hostname -I | awk '{print $1}'):6443" \
+  --pod-network-cidr "${pod_cidr}" \
+  --cri-socket unix:///run/containerd/containerd.sock
+
+# Configure kubectl for ubuntu user
+mkdir -p /home/ubuntu/.kube
+
+cp /etc/kubernetes/admin.conf \
+  /home/ubuntu/.kube/config
+
+chown -R ubuntu:ubuntu /home/ubuntu/.kube
+chmod 600 /home/ubuntu/.kube/config
+
+# Create join-command publisher
+cat >/usr/local/sbin/coco-publish-join.sh <<'SCRIPT'
+#!/bin/bash
+set -euo pipefail
+
+JOIN_CMD=$(kubeadm token create \
+  --ttl 12h \
+  --print-join-command)
+
+aws ssm put-parameter \
+  --region "${aws_region}" \
+  --name "${join_parameter_name}" \
+  --type SecureString \
+  --value "$JOIN_CMD" \
+  --overwrite
+SCRIPT
+
+chmod 700 /usr/local/sbin/coco-publish-join.sh
+
+# Publish initial worker join command
+/usr/local/sbin/coco-publish-join.sh
+
+# Periodically refresh the token in Parameter Store
+cat >/etc/systemd/system/coco-join-publisher.service <<'EOF'
+[Unit]
+Description=Refresh Kubernetes worker join command
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/coco-publish-join.sh
+EOF
+
+cat >/etc/systemd/system/coco-join-publisher.timer <<'EOF'
+[Unit]
+Description=Refresh Kubernetes join token periodically
+
+[Timer]
+OnBootSec=6h
+OnUnitActiveSec=6h
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
+systemctl daemon-reload
+systemctl enable --now coco-join-publisher.timer

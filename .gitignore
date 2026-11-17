@@ -109,3 +109,8 @@ crash.*.log
 
 # Terraform plan files
 *.tfplan
+
+etl/.env
+etl/.venv/
+**/__pycache__/
+*.pyc
