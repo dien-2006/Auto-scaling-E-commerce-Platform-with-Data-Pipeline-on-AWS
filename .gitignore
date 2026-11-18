@@ -91,3 +91,7 @@ tmp/
 temp/
 .cache/
 *.tmp
+
+# Exported Docker images and release bundles are distributed separately from source.
+/artifacts/docker/
+*.tsbuildinfo

@@ -1,0 +1,23 @@
+# Optional local OTP cache. Merge with docker-compose.yaml; never recreates PostgreSQL.
+services:
+  otp-redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --save
+      - ""
+      - --appendonly
+      - "no"
+      - --maxmemory
+      - 128mb
+      - --maxmemory-policy
+      - noeviction
+    # Dedicated volatile proofs: restart invalidates outstanding codes. No host port/volume.
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - marketplace_network

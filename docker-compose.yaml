@@ -8,9 +8,6 @@ services:
     container_name: marketplace_postgres
     restart: unless-stopped
 
-    env_file:
-      - .env
-
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-marketplace_db}
       POSTGRES_USER: ${POSTGRES_USER:-marketplace_user}
@@ -39,6 +36,78 @@ services:
       retries: 10
       start_period: 10s
 
+    networks:
+      - marketplace_network
+
+  # Application services use the existing PostgreSQL network and volume unchanged.
+  backend:
+    image: coco-backend:${COCO_IMAGE_TAG:-local}
+    build:
+      context: ./backend
+    restart: unless-stopped
+    init: true
+    # One private source; frontend/PostgreSQL receive only their explicit variables.
+    env_file:
+      - .env
+    environment:
+      MARKETPLACE_ENVIRONMENT: ${MARKETPLACE_ENVIRONMENT:-local}
+      MARKETPLACE_LOG_LEVEL: ${MARKETPLACE_LOG_LEVEL:-INFO}
+      MARKETPLACE_DB_HOST: postgres
+      MARKETPLACE_DB_PORT: "5432"
+      MARKETPLACE_DB_NAME: ${POSTGRES_DB:-marketplace_db}
+      MARKETPLACE_DB_USER: ${POSTGRES_USER:-marketplace_user}
+      MARKETPLACE_DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      MARKETPLACE_DB_POOL_SIZE: ${MARKETPLACE_DB_POOL_SIZE:-5}
+      MARKETPLACE_DB_MAX_OVERFLOW: ${MARKETPLACE_DB_MAX_OVERFLOW:-5}
+      MARKETPLACE_PUBLIC_ORIGIN: ${MARKETPLACE_PUBLIC_ORIGIN:-http://localhost:3001}
+      MARKETPLACE_ADDITIONAL_ORIGINS: '${MARKETPLACE_ADDITIONAL_ORIGINS:-["http://localhost:3001"]}'
+      MARKETPLACE_JWT_ISSUER: ${MARKETPLACE_JWT_ISSUER:-marketplace}
+      MARKETPLACE_JWT_AUDIENCE: ${MARKETPLACE_JWT_AUDIENCE:-marketplace-web}
+    ports:
+      - "127.0.0.1:${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=5)"
+      interval: 15s
+      timeout: 8s
+      retries: 5
+      start_period: 15s
+    networks:
+      - marketplace_network
+
+  frontend:
+    image: coco-frontend:${COCO_IMAGE_TAG:-local}
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    init: true
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+      INTERNAL_API_URL: http://backend:8000
+      MARKETPLACE_PUBLIC_ORIGIN: ${MARKETPLACE_PUBLIC_ORIGIN:-http://localhost:3001}
+      MARKETPLACE_ADDITIONAL_ORIGINS: '${MARKETPLACE_ADDITIONAL_ORIGINS:-["http://localhost:3001"]}'
+    ports:
+      - "0.0.0.0:${FRONTEND_PORT:-3001}:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/', {signal: AbortSignal.timeout(5000)}).then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 15s
+      timeout: 8s
+      retries: 5
+      start_period: 15s
     networks:
       - marketplace_network
 
