@@ -1,0 +1,398 @@
+
+
+BEGIN;
+
+CREATE SCHEMA IF NOT EXISTS marketplace;
+
+
+-- 01. Users
+CREATE TABLE marketplace.users (
+    user_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    email VARCHAR(255) NOT NULL,
+    password_hash TEXT NOT NULL,
+    full_name VARCHAR(150) NOT NULL,
+    phone VARCHAR(30),
+    user_role VARCHAR(10) NOT NULL DEFAULT 'USER',
+    user_status VARCHAR(10) NOT NULL DEFAULT 'ACTIVE',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT ck_users_role CHECK (user_role IN ('USER', 'ADMIN')),
+    CONSTRAINT ck_users_status CHECK (user_status IN ('ACTIVE', 'LOCKED')),
+    CONSTRAINT ck_users_email_nonblank CHECK (BTRIM(email) <> '')
+);
+CREATE UNIQUE INDEX uq_users_email_lower ON marketplace.users (LOWER(email));
+
+-- 02. Shops
+CREATE TABLE marketplace.shops (
+    shop_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    owner_user_id BIGINT NOT NULL UNIQUE,
+    shop_name VARCHAR(150) NOT NULL,
+    shop_slug VARCHAR(160) NOT NULL UNIQUE,
+    description TEXT,
+    contact_email VARCHAR(255),
+    logo_key TEXT,
+    shop_status VARCHAR(12) NOT NULL DEFAULT 'PENDING',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_shops_owner FOREIGN KEY (owner_user_id) REFERENCES marketplace.users(user_id),
+    CONSTRAINT ck_shops_status CHECK (shop_status IN ('PENDING', 'APPROVED', 'REJECTED', 'LOCKED'))
+);
+
+-- 03. Categories
+CREATE TABLE marketplace.categories (
+    category_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    parent_category_id BIGINT,
+    category_name VARCHAR(120) NOT NULL,
+    category_slug VARCHAR(140) NOT NULL UNIQUE,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_categories_parent FOREIGN KEY (parent_category_id) REFERENCES marketplace.categories(category_id),
+    CONSTRAINT ck_categories_no_self_parent CHECK (parent_category_id IS DISTINCT FROM category_id)
+);
+
+-- 04. Products
+CREATE TABLE marketplace.products (
+    product_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    shop_id BIGINT NOT NULL,
+    category_id BIGINT NOT NULL,
+    sku VARCHAR(64) NOT NULL,
+    product_name VARCHAR(200) NOT NULL,
+    description TEXT,
+    price NUMERIC(14,2) NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_products_shop FOREIGN KEY (shop_id) REFERENCES marketplace.shops(shop_id),
+    CONSTRAINT fk_products_category FOREIGN KEY (category_id) REFERENCES marketplace.categories(category_id),
+    CONSTRAINT uq_products_shop_sku UNIQUE (shop_id, sku),
+    CONSTRAINT uq_products_shop_product UNIQUE (shop_id, product_id),
+    CONSTRAINT ck_products_price CHECK (price >= 0)
+);
+
+-- 05. Product images
+CREATE TABLE marketplace.product_images (
+    product_image_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    product_id BIGINT NOT NULL,
+    image_key TEXT NOT NULL,
+    is_primary BOOLEAN NOT NULL DEFAULT FALSE,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_product_images_product FOREIGN KEY (product_id) REFERENCES marketplace.products(product_id) ON DELETE CASCADE,
+    CONSTRAINT ck_product_images_sort_order CHECK (sort_order >= 0),
+    CONSTRAINT ck_product_images_key_nonblank CHECK (BTRIM(image_key) <> ''),
+    CONSTRAINT uq_product_images_key UNIQUE (product_id, image_key)
+);
+CREATE UNIQUE INDEX uq_product_images_primary ON marketplace.product_images(product_id) WHERE is_primary = TRUE;
+
+-- 06. Inventory
+CREATE TABLE marketplace.inventory (
+    product_id BIGINT PRIMARY KEY,
+    quantity INTEGER NOT NULL DEFAULT 0,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_inventory_product FOREIGN KEY (product_id) REFERENCES marketplace.products(product_id),
+    CONSTRAINT ck_inventory_quantity CHECK (quantity >= 0)
+);
+
+-- 07. Addresses
+CREATE TABLE marketplace.addresses (
+    address_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    recipient_name VARCHAR(150) NOT NULL,
+    phone VARCHAR(30) NOT NULL,
+    address_line TEXT NOT NULL,
+    ward VARCHAR(120),
+    district VARCHAR(120),
+    city VARCHAR(120) NOT NULL,
+    is_default BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_addresses_user FOREIGN KEY (user_id) REFERENCES marketplace.users(user_id)
+);
+CREATE UNIQUE INDEX uq_addresses_default_per_user ON marketplace.addresses(user_id) WHERE is_default = TRUE;
+
+-- 08. Carts
+CREATE TABLE marketplace.carts (
+    cart_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id BIGINT NOT NULL UNIQUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_carts_user FOREIGN KEY (user_id) REFERENCES marketplace.users(user_id)
+);
+
+-- 09. Cart items
+CREATE TABLE marketplace.cart_items (
+    cart_item_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    cart_id BIGINT NOT NULL,
+    product_id BIGINT NOT NULL,
+    quantity INTEGER NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_cart_items_cart FOREIGN KEY (cart_id) REFERENCES marketplace.carts(cart_id) ON DELETE CASCADE,
+    CONSTRAINT fk_cart_items_product FOREIGN KEY (product_id) REFERENCES marketplace.products(product_id),
+    CONSTRAINT uq_cart_items_cart_product UNIQUE (cart_id, product_id),
+    CONSTRAINT ck_cart_items_quantity CHECK (quantity > 0)
+);
+
+-- 10. Orders
+CREATE TABLE marketplace.orders (
+    order_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    buyer_user_id BIGINT NOT NULL,
+    idempotency_key UUID NOT NULL,
+    recipient_name VARCHAR(150) NOT NULL,
+    phone VARCHAR(30) NOT NULL,
+    shipping_address TEXT NOT NULL,
+    total_amount NUMERIC(14,2) NOT NULL,
+    discount_amount NUMERIC(14,2) NOT NULL DEFAULT 0,
+    shipping_fee NUMERIC(14,2) NOT NULL DEFAULT 0,
+    payment_method VARCHAR(20) NOT NULL DEFAULT 'COD',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_orders_buyer FOREIGN KEY (buyer_user_id) REFERENCES marketplace.users(user_id),
+    CONSTRAINT uq_orders_buyer_idempotency UNIQUE (buyer_user_id, idempotency_key),
+    CONSTRAINT ck_orders_total CHECK (total_amount >= 0),
+    CONSTRAINT ck_orders_payment CHECK (payment_method IN ('COD', 'VNPAY', 'MOMO')),
+    CONSTRAINT ck_orders_discount CHECK (discount_amount >= 0),
+    CONSTRAINT ck_orders_shipping_fee CHECK (shipping_fee >= 0)
+);
+
+-- 11. Shop orders
+CREATE TABLE marketplace.shop_orders (
+    shop_order_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    order_id BIGINT NOT NULL,
+    shop_id BIGINT NOT NULL,
+    order_status VARCHAR(12) NOT NULL DEFAULT 'PENDING',
+    subtotal NUMERIC(14,2) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_shop_orders_order FOREIGN KEY (order_id) REFERENCES marketplace.orders(order_id),
+    CONSTRAINT fk_shop_orders_shop FOREIGN KEY (shop_id) REFERENCES marketplace.shops(shop_id),
+    CONSTRAINT uq_shop_orders_order_shop UNIQUE (order_id, shop_id),
+    CONSTRAINT uq_shop_orders_id_shop UNIQUE (shop_order_id, shop_id),
+    CONSTRAINT ck_shop_orders_status CHECK (order_status IN ('PENDING', 'CONFIRMED', 'SHIPPING', 'COMPLETED', 'CANCELLED')),
+    CONSTRAINT ck_shop_orders_subtotal CHECK (subtotal >= 0)
+);
+
+-- 12. Order items
+CREATE TABLE marketplace.order_items (
+    order_item_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    shop_order_id BIGINT NOT NULL,
+    shop_id BIGINT NOT NULL,
+    product_id BIGINT NOT NULL,
+    product_name VARCHAR(200) NOT NULL,
+    unit_price NUMERIC(14,2) NOT NULL,
+    quantity INTEGER NOT NULL,
+    CONSTRAINT fk_order_items_shop_order FOREIGN KEY (shop_order_id, shop_id)
+        REFERENCES marketplace.shop_orders(shop_order_id, shop_id),
+    CONSTRAINT fk_order_items_shop_product FOREIGN KEY (shop_id, product_id)
+        REFERENCES marketplace.products(shop_id, product_id),
+    CONSTRAINT ck_order_items_price CHECK (unit_price >= 0),
+    CONSTRAINT ck_order_items_quantity CHECK (quantity > 0),
+    CONSTRAINT uq_order_items_shop_order_product UNIQUE (shop_order_id, product_id)
+);
+
+-- Supporting indexes for common joins and lookups
+CREATE INDEX idx_categories_parent ON marketplace.categories(parent_category_id);
+CREATE INDEX idx_products_category ON marketplace.products(category_id);
+CREATE INDEX idx_products_shop_active ON marketplace.products(shop_id, is_active);
+CREATE INDEX idx_product_images_sort ON marketplace.product_images(product_id, sort_order, product_image_id);
+CREATE INDEX idx_addresses_user ON marketplace.addresses(user_id);
+CREATE INDEX idx_cart_items_product ON marketplace.cart_items(product_id);
+CREATE INDEX idx_orders_buyer_created ON marketplace.orders(buyer_user_id, created_at DESC);
+CREATE INDEX idx_shop_orders_shop_status ON marketplace.shop_orders(shop_id, order_status);
+CREATE INDEX idx_order_items_shop_product ON marketplace.order_items(shop_id, product_id);
+
+-- Automatic updated_at maintenance
+CREATE FUNCTION marketplace.set_updated_at() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_users_updated_at BEFORE UPDATE ON marketplace.users FOR EACH ROW EXECUTE FUNCTION marketplace.set_updated_at();
+CREATE TRIGGER trg_shops_updated_at BEFORE UPDATE ON marketplace.shops FOR EACH ROW EXECUTE FUNCTION marketplace.set_updated_at();
+CREATE TRIGGER trg_products_updated_at BEFORE UPDATE ON marketplace.products FOR EACH ROW EXECUTE FUNCTION marketplace.set_updated_at();
+CREATE TRIGGER trg_inventory_updated_at BEFORE UPDATE ON marketplace.inventory FOR EACH ROW EXECUTE FUNCTION marketplace.set_updated_at();
+CREATE TRIGGER trg_carts_updated_at BEFORE UPDATE ON marketplace.carts FOR EACH ROW EXECUTE FUNCTION marketplace.set_updated_at();
+CREATE TRIGGER trg_shop_orders_updated_at BEFORE UPDATE ON marketplace.shop_orders FOR EACH ROW EXECUTE FUNCTION marketplace.set_updated_at();
+
+
+-- 13. Audit logs (actor_user_id is provided by trusted application context)
+CREATE TABLE marketplace.audit_logs (
+    audit_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    actor_user_id BIGINT REFERENCES marketplace.users(user_id) ON DELETE SET NULL,
+    action VARCHAR(10) NOT NULL CHECK (action IN ('INSERT', 'UPDATE', 'DELETE')),
+    table_name VARCHAR(100) NOT NULL,
+    record_id BIGINT NOT NULL,
+    changed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 14. Audit log column changes
+CREATE TABLE marketplace.audit_log_changes (
+    change_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    audit_id BIGINT NOT NULL REFERENCES marketplace.audit_logs(audit_id) ON DELETE CASCADE,
+    column_name VARCHAR(100) NOT NULL,
+    old_value JSONB,
+    new_value JSONB
+);
+
+-- 15. Product price history
+CREATE TABLE marketplace.product_price_history (
+    price_history_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    product_id BIGINT NOT NULL REFERENCES marketplace.products(product_id),
+    old_price NUMERIC(14,2) NOT NULL CHECK (old_price >= 0),
+    new_price NUMERIC(14,2) NOT NULL CHECK (new_price >= 0),
+    changed_by BIGINT REFERENCES marketplace.users(user_id) ON DELETE SET NULL,
+    changed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT ck_price_changed CHECK (old_price <> new_price)
+);
+
+-- 16. Inventory movements
+CREATE TABLE marketplace.inventory_movements (
+    movement_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    product_id BIGINT NOT NULL REFERENCES marketplace.products(product_id),
+    movement_type VARCHAR(20) NOT NULL CHECK (movement_type IN ('IMPORT', 'SALE', 'RETURN', 'ADJUSTMENT')),
+    quantity_change INTEGER NOT NULL CHECK (quantity_change <> 0),
+    quantity_before INTEGER NOT NULL CHECK (quantity_before >= 0),
+    quantity_after INTEGER NOT NULL CHECK (quantity_after >= 0),
+    order_id BIGINT REFERENCES marketplace.orders(order_id),
+    created_by BIGINT REFERENCES marketplace.users(user_id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT ck_inventory_movement_balance CHECK (quantity_after = quantity_before + quantity_change)
+);
+
+-- 17. Shop order status history
+CREATE TABLE marketplace.shop_order_status_history (
+    history_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    shop_order_id BIGINT NOT NULL REFERENCES marketplace.shop_orders(shop_order_id),
+    old_status VARCHAR(12),
+    new_status VARCHAR(12) NOT NULL,
+    changed_by BIGINT REFERENCES marketplace.users(user_id) ON DELETE SET NULL,
+    changed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT ck_order_history_old CHECK (old_status IS NULL OR old_status IN ('PENDING','CONFIRMED','SHIPPING','COMPLETED','CANCELLED')),
+    CONSTRAINT ck_order_history_new CHECK (new_status IN ('PENDING','CONFIRMED','SHIPPING','COMPLETED','CANCELLED'))
+);
+
+-- 18. Shop approval history
+CREATE TABLE marketplace.shop_approval_history (
+    approval_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    shop_id BIGINT NOT NULL REFERENCES marketplace.shops(shop_id),
+    admin_user_id BIGINT NOT NULL REFERENCES marketplace.users(user_id),
+    old_status VARCHAR(12),
+    new_status VARCHAR(12) NOT NULL,
+    reason TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT ck_approval_old CHECK (old_status IS NULL OR old_status IN ('PENDING','APPROVED','REJECTED','LOCKED')),
+    CONSTRAINT ck_approval_new CHECK (new_status IN ('PENDING','APPROVED','REJECTED','LOCKED'))
+);
+
+-- 19. Percentage-only coupons
+CREATE TABLE marketplace.coupons (
+    coupon_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    shop_id BIGINT REFERENCES marketplace.shops(shop_id),
+    code VARCHAR(50) NOT NULL UNIQUE,
+    discount_percent NUMERIC(5,2) NOT NULL CHECK (discount_percent > 0 AND discount_percent <= 100),
+    min_order_amount NUMERIC(14,2) NOT NULL DEFAULT 0 CHECK (min_order_amount >= 0),
+    usage_limit INTEGER NOT NULL CHECK (usage_limit > 0),
+    used_count INTEGER NOT NULL DEFAULT 0 CHECK (used_count >= 0),
+    starts_at TIMESTAMPTZ NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT ck_coupon_dates CHECK (expires_at > starts_at),
+    CONSTRAINT ck_coupon_used_count CHECK (used_count <= usage_limit),
+    CONSTRAINT ck_coupon_code_nonblank CHECK (BTRIM(code) <> '')
+);
+
+-- 20. Coupon usage (at most one coupon per order)
+CREATE TABLE marketplace.coupon_usages (
+    usage_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    coupon_id BIGINT NOT NULL REFERENCES marketplace.coupons(coupon_id),
+    user_id BIGINT NOT NULL REFERENCES marketplace.users(user_id),
+    order_id BIGINT NOT NULL UNIQUE REFERENCES marketplace.orders(order_id),
+    discount_amount NUMERIC(14,2) NOT NULL CHECK (discount_amount >= 0),
+    used_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 21. Product reviews
+CREATE TABLE marketplace.product_reviews (
+    review_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    product_id BIGINT NOT NULL REFERENCES marketplace.products(product_id),
+    user_id BIGINT NOT NULL REFERENCES marketplace.users(user_id),
+    order_item_id BIGINT NOT NULL UNIQUE REFERENCES marketplace.order_items(order_item_id),
+    rating SMALLINT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+    comment TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 22. Payments (multiple attempts per order)
+CREATE TABLE marketplace.payments (
+    payment_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    order_id BIGINT NOT NULL REFERENCES marketplace.orders(order_id),
+    payment_method VARCHAR(20) NOT NULL CHECK (payment_method IN ('COD','VNPAY','MOMO')),
+    amount NUMERIC(14,2) NOT NULL CHECK (amount >= 0),
+    payment_status VARCHAR(20) NOT NULL DEFAULT 'PENDING'
+        CHECK (payment_status IN ('PENDING','SUCCESS','FAILED','REFUNDED')),
+    transaction_code VARCHAR(150),
+    paid_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 25. Shippers (created before shipments due to FK)
+CREATE TABLE marketplace.shippers (
+    shipper_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    full_name VARCHAR(150) NOT NULL,
+    phone VARCHAR(30) NOT NULL,
+    carrier VARCHAR(100),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 23. Shipments (one shipment per shop order for this version)
+CREATE TABLE marketplace.shipments (
+    shipment_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    shop_order_id BIGINT NOT NULL UNIQUE REFERENCES marketplace.shop_orders(shop_order_id),
+    shipper_id BIGINT REFERENCES marketplace.shippers(shipper_id),
+    carrier VARCHAR(100),
+    tracking_number VARCHAR(100),
+    shipping_method VARCHAR(20) NOT NULL DEFAULT 'STANDARD'
+        CHECK (shipping_method IN ('STANDARD','EXPRESS','INSTANT')),
+    shipping_fee NUMERIC(14,2) NOT NULL DEFAULT 0 CHECK (shipping_fee >= 0),
+    shipping_status VARCHAR(20) NOT NULL DEFAULT 'PENDING'
+        CHECK (shipping_status IN ('PENDING','PICKED_UP','IN_TRANSIT','DELIVERED','FAILED')),
+    shipped_at TIMESTAMPTZ,
+    delivered_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 24. Shipment tracking
+CREATE TABLE marketplace.shipment_tracking (
+    tracking_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    shipment_id BIGINT NOT NULL REFERENCES marketplace.shipments(shipment_id),
+    status VARCHAR(20) NOT NULL
+        CHECK (status IN ('PENDING','PICKED_UP','IN_TRANSIT','DELIVERED','FAILED')),
+    description TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Additional indexes for frequent lookups
+CREATE INDEX idx_audit_logs_record ON marketplace.audit_logs(table_name, record_id, changed_at DESC);
+CREATE INDEX idx_audit_logs_actor ON marketplace.audit_logs(actor_user_id);
+CREATE INDEX idx_price_history_product ON marketplace.product_price_history(product_id, changed_at DESC);
+CREATE INDEX idx_inventory_movements_product ON marketplace.inventory_movements(product_id, created_at DESC);
+CREATE INDEX idx_inventory_movements_order ON marketplace.inventory_movements(order_id);
+CREATE INDEX idx_order_status_history_order ON marketplace.shop_order_status_history(shop_order_id, changed_at DESC);
+CREATE INDEX idx_shop_approval_history_shop ON marketplace.shop_approval_history(shop_id, created_at DESC);
+CREATE INDEX idx_coupons_shop ON marketplace.coupons(shop_id);
+CREATE INDEX idx_coupon_usages_coupon ON marketplace.coupon_usages(coupon_id);
+CREATE INDEX idx_reviews_product ON marketplace.product_reviews(product_id);
+CREATE INDEX idx_payments_order ON marketplace.payments(order_id);
+CREATE UNIQUE INDEX uq_payments_transaction_code ON marketplace.payments(payment_method, transaction_code)
+    WHERE transaction_code IS NOT NULL;
+CREATE UNIQUE INDEX uq_payments_one_success_per_order ON marketplace.payments(order_id)
+    WHERE payment_status = 'SUCCESS';
+CREATE INDEX idx_shipments_shipper ON marketplace.shipments(shipper_id);
+CREATE INDEX idx_shipment_tracking_shipment ON marketplace.shipment_tracking(shipment_id, created_at DESC);
+
+CREATE TRIGGER trg_reviews_updated_at BEFORE UPDATE ON marketplace.product_reviews
+    FOR EACH ROW EXECUTE FUNCTION marketplace.set_updated_at();
+
+COMMIT;
