@@ -2,6 +2,7 @@
 # ============================================================
 # 1. ENVIRONMENT VARIABLES & SECRETS
 # ============================================================
+
 .env
 .env.*
 !.env.example
@@ -10,51 +11,66 @@
 *.key
 *.p12
 *.pfx
+
 *.tfvars
 *.tfvars.json
 !*.tfvars.example
 
 # ============================================================
-# 2. PYTHON / BACKEND
+# 2. PYTHON / BACKEND / ETL
 # ============================================================
+
 __pycache__/
 *.py[cod]
 *.egg-info/
+
 .venv/
 venv/
 env/
+
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+
 .coverage
 htmlcov/
 
 # ============================================================
 # 3. NODE.JS / FRONTEND
 # ============================================================
+
 node_modules/
 dist/
 build/
 .next/
 .nuxt/
 coverage/
+
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+*.tsbuildinfo
+
 # ============================================================
 # 4. DOCKER
 # ============================================================
+
 docker-compose.override.yml
 *.log
 
+# Exported Docker images and release bundles
+/artifacts/docker/
+
 # ============================================================
-# 5. POSTGRESQL
+# 5. POSTGRESQL / DATABASE
 # ============================================================
+
 pgdata/
 postgres_data/
 postgres_backup/
+
 *.dump
 *.backup
 *.sql.gz
@@ -62,46 +78,14 @@ postgres_backup/
 # ============================================================
 # 6. TERRAFORM / AWS
 # ============================================================
-**/.terraform/*
+
+# Terraform working directories
+.terraform/
+
+# Terraform state files
 *.tfstate
 *.tfstate.*
-crash.log
-crash.*.log
-override.tf
-override.tf.json
-*_override.tf
-*_override.tf.json
-
 .terraform.tfstate.lock.info
-
-# ============================================================
-# 7. IDE / OPERATING SYSTEM
-# ============================================================
-.vscode/
-.idea/
-.DS_Store
-Thumbs.db
-*.swp
-*.swo
-
-# ============================================================
-# 8. TEMPORARY FILES
-# ============================================================
-tmp/
-temp/
-.cache/
-*.tmp
-
-
-# Terraform variable files
-**/terraform.tfvars
-**/*.auto.tfvars
-**/*.tfvars.json
-
-# Terraform state
-**/*.tfstate
-**/*.tfstate.*
-**/.terraform/
 
 # Terraform crash logs
 crash.log
@@ -110,7 +94,30 @@ crash.*.log
 # Terraform plan files
 *.tfplan
 
-etl/.env
-etl/.venv/
-**/__pycache__/
-*.pyc
+# Terraform override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# ============================================================
+# 7. IDE / OPERATING SYSTEM
+# ============================================================
+
+.vscode/
+.idea/
+
+.DS_Store
+Thumbs.db
+
+*.swp
+*.swo
+
+# ============================================================
+# 8. TEMPORARY FILES
+# ============================================================
+
+tmp/
+temp/
+.cache/
+*.tmp
