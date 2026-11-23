@@ -1,5 +1,10 @@
 mock_provider "aws" {
 
+  # Keep computed bucket ARNs valid for module input validation.
+  mock_resource "aws_s3_bucket" {
+    defaults = { arn = "arn:aws:s3:::example-prod-images" }
+  }
+
   mock_resource "aws_iam_role" {
     defaults = { arn = "arn:aws:iam::123456789012:role/mock" }
   }

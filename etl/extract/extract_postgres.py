@@ -4,6 +4,8 @@ import json
 import time
 import logging
 import boto3
+import re
+from botocore.config import Config
 
 from pyspark.context import SparkContext
 from awsglue.context import GlueContext
@@ -23,6 +25,8 @@ args = getResolvedOptions(
         "DB_SECRET_ARN",
         "S3_BUCKET",
         "RAW_PREFIX",
+        "WORKFLOW_NAME",
+        "WORKFLOW_RUN_ID",
     ],
 )
 
@@ -31,6 +35,9 @@ JDBC_URL = args["JDBC_URL"]
 SECRET_ARN = args["DB_SECRET_ARN"]
 BUCKET = args["S3_BUCKET"]
 RAW_PREFIX = args["RAW_PREFIX"].strip("/")
+BATCH_ID = args["WORKFLOW_RUN_ID"]
+if not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", BATCH_ID):
+    raise ValueError("Invalid workflow run ID")
 
 SCHEMA = "marketplace"
 
@@ -92,6 +99,8 @@ def get_credentials():
     client = boto3.client(
         "secretsmanager",
         region_name=REGION,
+        config=Config(retries={"mode": "standard", "total_max_attempts": 4},
+                      connect_timeout=10, read_timeout=60),
     )
 
     response = client.get_secret_value(
@@ -132,6 +141,9 @@ def read_postgres(table, username, password):
         .option("password", password)
         .option("driver", "org.postgresql.Driver")
         .option("fetchsize", "1000")
+        .option("readOnly", "true")
+        .option("readOnlyMode", "always")
+        .option("sessionInitStatement", "SET default_transaction_read_only = on")
         .load()
     )
 
@@ -139,12 +151,12 @@ def read_postgres(table, username, password):
 def write_raw(df, table):
     path = (
         f"s3://{BUCKET}/"
-        f"{RAW_PREFIX}/{table}/current/"
+        f"{RAW_PREFIX}/{table}/runs/{BATCH_ID}/"
     )
 
     (
         df.write
-        .mode("overwrite")
+        .mode("errorifexists")
         .format("parquet")
         .option("compression", "snappy")
         .save(path)
@@ -157,6 +169,7 @@ def main():
     logger.info("Starting COCO full snapshot extract")
 
     username, password = get_credentials()
+    tables = {}
 
     for table in TABLES:
         start = time.perf_counter()
@@ -165,9 +178,13 @@ def main():
 
         df = read_postgres(
             table, username, password
-        )
-
-        path = write_raw(df, table)
+        ).persist()
+        try:
+            rows = df.count()
+            path = write_raw(df, table)
+            tables[table] = {"location": path, "rows": rows}
+        finally:
+            df.unpersist()
 
         logger.info(
             "Extracted %s to %s in %.2fs",
@@ -177,6 +194,13 @@ def main():
         )
 
     job.commit()
+    s3 = boto3.client("s3", region_name=REGION)
+    s3.put_object(
+        Bucket=BUCKET, Key=f"{RAW_PREFIX}/_runs/{BATCH_ID}.json",
+        Body=json.dumps({"version": 1, "run_id": BATCH_ID,
+                         "workflow": args["WORKFLOW_NAME"], "tables": tables}).encode(),
+        ContentType="application/json", ServerSideEncryption="AES256",
+    )
     logger.info("All extracts succeeded")
 
 

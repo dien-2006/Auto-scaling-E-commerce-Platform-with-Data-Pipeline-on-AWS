@@ -41,7 +41,7 @@ resource "aws_cloudwatch_dashboard" "main" {
         height = 6
 
         properties = {
-          title  = "Backend HTTP 5xx"
+          title  = "Web HTTP 5xx"
           region = var.aws_region
           period = 60
           stat   = "Sum"
@@ -53,7 +53,7 @@ resource "aws_cloudwatch_dashboard" "main" {
               "LoadBalancer",
               var.alb_arn_suffix,
               "TargetGroup",
-              var.backend_target_group_arn_suffix
+              var.web_target_group_arn_suffix
             ]
           ]
         }
@@ -66,7 +66,7 @@ resource "aws_cloudwatch_dashboard" "main" {
         height = 6
 
         properties = {
-          title  = "Backend Response Time"
+          title  = "Web Response Time"
           region = var.aws_region
           period = 60
           stat   = "p95"
@@ -78,7 +78,7 @@ resource "aws_cloudwatch_dashboard" "main" {
               "LoadBalancer",
               var.alb_arn_suffix,
               "TargetGroup",
-              var.backend_target_group_arn_suffix
+              var.web_target_group_arn_suffix
             ]
           ]
         }

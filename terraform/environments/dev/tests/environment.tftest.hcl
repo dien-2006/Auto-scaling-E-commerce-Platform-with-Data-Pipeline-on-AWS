@@ -1,5 +1,10 @@
 mock_provider "aws" {
 
+  # IAM validates this computed output even when the AWS provider is mocked.
+  mock_resource "aws_s3_bucket" {
+    defaults = { arn = "arn:aws:s3:::example-dev-images" }
+  }
+
   mock_resource "aws_iam_role" {
     defaults = { arn = "arn:aws:iam::123456789012:role/mock" }
   }
@@ -19,7 +24,10 @@ mock_provider "aws" {
     defaults = { arn = "arn:aws:sns:ap-southeast-1:123456789012:mock" }
   }
   mock_resource "aws_kms_key" {
-    defaults = { arn = "arn:aws:kms:ap-southeast-1:123456789012:key/00000000-0000-0000-0000-000000000000" }
+    defaults = {
+      arn    = "arn:aws:kms:ap-southeast-1:123456789012:key/00000000-0000-0000-0000-000000000000"
+      key_id = "00000000-0000-0000-0000-000000000000"
+    }
   }
 
   mock_data "aws_caller_identity" {
@@ -40,6 +48,34 @@ mock_provider "aws" {
 
 run "environment_wiring" {
   command = apply
+
+  assert {
+    condition = (
+      module.kubernetes.worker_capacity.minimum == 2 &&
+      jsondecode(aws_iam_role.cluster_autoscaler.assume_role_policy).Statement[0].Principal.AWS == module.iam.control_plane_role_arn &&
+      aws_iam_role_policy.control_plane_assume_autoscaler.role == module.iam.control_plane_role_name &&
+      endswith(jsondecode(aws_iam_role_policy.cluster_autoscaler.policy).Statement[1].Resource, ":autoScalingGroupName/ecommerce-dev-worker-asg") &&
+      jsondecode(aws_iam_role_policy.cluster_autoscaler.policy).Statement[1].Condition.StringEquals["autoscaling:ResourceTag/k8s.io/cluster-autoscaler/ecommerce-dev-k8s"] == "owned"
+    )
+    error_message = "Autoscaler must retain two workers and may change only the tagged dev ASG through its dedicated control-plane-assumed role."
+  }
+
+  assert {
+    condition = (
+      aws_iam_role_policy.control_plane_monitoring_secret.role == module.iam.control_plane_role_name &&
+      jsondecode(aws_iam_role_policy.control_plane_monitoring_secret.policy).Statement[0].Condition.StringEquals["kms:EncryptionContext:PARAMETER_ARN"] == local.monitoring_parameter_arn
+    )
+    error_message = "Monitoring credential decryption must be restricted to its exact SSM parameter and the control plane."
+  }
+
+  assert {
+    condition = (
+      jsondecode(aws_iam_role.ebs_csi.assume_role_policy).Statement[0].Principal.AWS == module.iam.control_plane_role_arn &&
+      aws_iam_role_policy.control_plane_assume_ebs_csi.role == module.iam.control_plane_role_name &&
+      aws_iam_role_policy_attachment.ebs_csi.policy_arn == "arn:aws:iam::aws:policy/AmazonEBSCSIDriverPolicyV2"
+    )
+    error_message = "CSI must use its own role assumed by the trusted control plane, not the worker web role."
+  }
 
   assert {
     condition     = length(module.network.private_subnet_ids) == 2 && length(module.network.public_subnet_ids) == 2

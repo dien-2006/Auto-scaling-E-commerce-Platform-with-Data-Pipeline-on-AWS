@@ -14,3 +14,8 @@ output "domain_name" {
 output "base_url" {
   value = "https://${aws_cloudfront_distribution.images.domain_name}"
 }
+
+output "public_image_prefixes" {
+  description = "Only verified image prefixes may be served through this distribution."
+  value       = ["product-images/", "shop-logos/"]
+}

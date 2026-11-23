@@ -12,6 +12,8 @@ spec:
     metadata:
       labels:
         app: coco-frontend
+      annotations:
+        checksum/runtime-config: REPLACE_WITH_RUNTIME_CHECKSUM
     spec:
       automountServiceAccountToken: false
       topologySpreadConstraints:
@@ -25,9 +27,20 @@ spec:
         - name: frontend
           image: coco-frontend:v1
           imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: coco-frontend-config
+          env:
+            - name: MARKETPLACE_PROXY_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: coco-backend-secret
+                  key: MARKETPLACE_PROXY_SECRET
           ports:
             - name: http
-              containerPort: 80
+              containerPort: 3000
+            - name: metrics
+              containerPort: 9091
           resources:
             requests:
               cpu: 100m
@@ -37,13 +50,15 @@ spec:
               memory: 512Mi
           readinessProbe:
             httpGet:
-              path: /
+              path: /health/live
               port: http
             initialDelaySeconds: 5
             periodSeconds: 10
+            timeoutSeconds: 3
           livenessProbe:
             httpGet:
-              path: /
+              path: /health/live
               port: http
             initialDelaySeconds: 15
             periodSeconds: 20
+            timeoutSeconds: 3

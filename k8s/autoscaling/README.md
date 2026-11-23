@@ -1,46 +1,48 @@
 # Chạy Cluster Autoscaler
 
+Dev dùng [RUNBOOK-dev.md](RUNBOOK-dev.md), manifest ghim v1.34.6 và các task SSM
+có kiểm tra bootstrap/IAM/baseline. Worker min 2/max 4; source có role riêng và
+provider ID. Không cài thêm Helm controller từ values-dev.yaml.
+
 HPA tăng/giảm Pod. Cluster Autoscaler tăng/giảm worker EC2 khi Pod không đủ chỗ chạy hoặc node dư tài nguyên. Control plane vẫn một máy.
 
-| Môi trường | Context | Values | Cluster/ASG discovery tag |
-| --- | --- | --- | --- |
-| Dev | `coco-dev` | `values-dev.yaml` | `ecommerce-dev-k8s` |
-| Prod | `coco-prod` | `values-prod.yaml` | `ecommerce-prod-k8s` |
+Dev dùng `cluster-autoscaler-dev.yaml`; hai file values-dev.yaml/values-prod.yaml
+giữ để tham khảo cho Helm/prod, không được quy trình dev hiện tại sử dụng.
 
 ## Điều kiện trước khi cài
 
-- Worker ASG do Terraform tạo: min 1, ban đầu 2, max 4.
-- Identity của Autoscaler có quyền đọc EC2/ASG và thay đổi đúng worker ASG của môi trường đó. Terraform hiện chưa cấp đủ các quyền này.
-- Node có AWS provider ID để liên kết với instance EC2. Bootstrap hiện chưa cấu hình rõ phần này.
+- Worker ASG dev: min 2, ban đầu 2, max 4.
+- Apply role riêng của Autoscaler theo IAM plan có guard, không gắn quyền scaling vào worker/web role.
+- Node có AWS provider ID để liên kết với instance EC2. Source bootstrap đã có cấu hình này; cần kiểm tra launch template đang dùng trên AWS, vì sửa file local không tự cập nhật máy mới.
 - Pod lấy được credential AWS; kiểm tra IMDSv2/identity thay vì mặc định cho rằng EC2 role luôn truy cập được từ Pod.
 - Node/network, Metrics Server và HPA ứng dụng đã hoạt động.
 
-Không chạy bước cài dưới đây để thay thế các điều kiện còn thiếu. Xem [hướng dẫn chính](../README.md#3-install-cluster-autoscaler-via-helm).
+Chạy theo thứ tự test → IAM plan/apply → bootstrap preview/submit → render → SSM
+install → kiểm thử hai chiều trong [runbook](RUNBOOK-dev.md).
 
-## Cài khi đã đủ điều kiện
-
-Từ **gốc repo**:
-
-```sh
-helm repo add autoscaler https://kubernetes.github.io/autoscaler
-helm repo update
-helm --kube-context coco-dev upgrade --install cluster-autoscaler autoscaler/cluster-autoscaler --namespace kube-system -f k8s/autoscaling/values-dev.yaml --set image.tag=v1.34.0
-```
-
-Đối với prod:
+Sau khi nghiệm thu ETL, chạy từ gốc repo trên máy local:
 
 ```sh
-helm --kube-context coco-prod upgrade --install cluster-autoscaler autoscaler/cluster-autoscaler --namespace kube-system -f k8s/autoscaling/values-prod.yaml --set image.tag=v1.34.0
+python3 scripts/aws/check-autoscaling-dev.py
 ```
 
-Image phải cùng minor version với Kubernetes 1.34. Kiểm tra chart tương thích và cố định chart version đã được thử nghiệm bằng `--version` trước khi dùng cho prod.
+Script chỉ đọc account, ASG/EC2 và launch template thực tế; không thay IAM hay số
+worker. Sửa các prerequisite fail trước khi cài. Kiểm tra này không xác nhận quyền
+IAM, deployment Autoscaler hay worker mới đã join Ready; cần kiểm tra các bước đó
+riêng khi triển khai. Task `run-dev-task.py autoscaling` cài controller qua SSM.
+
+Hiện dev dùng một ASG trải hai AZ. EBS của monitoring thuộc một AZ cụ thể, nên
+không thể coi worker ở AZ kia là nơi thay thế volume. Trước khi kiểm thử scale-down
+cần xác định vị trí PVC/Pod và bảo đảm giữ capacity đúng AZ; hướng tách ASG theo AZ
+cần plan di chuyển worker riêng, không tự destroy/recreate ASG hiện hữu.
 
 ## Kiểm tra
 
 ```sh
-kubectl --context coco-dev -n kube-system get deploy -l app.kubernetes.io/instance=cluster-autoscaler
-kubectl --context coco-dev -n kube-system logs -l app.kubernetes.io/instance=cluster-autoscaler --all-containers=true --tail=100
-kubectl --context coco-dev -n coco get hpa -w
+python3 scripts/aws/run-dev-task.py scaling-status
 ```
 
-Đổi context sang `coco-prod` để kiểm tra prod. Tạo tải khiến HPA tăng Pod; chỉ khi có Pod Pending do thiếu tài nguyên, Autoscaler mới có lý do tăng worker. ASG tối đa bốn worker không có nghĩa cứ có request là tăng ngay lên bốn.
+Đọc output SSM của command vừa gửi như hướng dẫn runbook. Quy trình này chỉ cho
+dev; prod cần thiết kế/kiểm chứng IAM và topology riêng. Chỉ khi Pod Pending vì
+thiếu tài nguyên, Autoscaler mới cần tăng worker; có request không đồng nghĩa
+phải tăng ngay lên bốn máy.

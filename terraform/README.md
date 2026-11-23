@@ -80,7 +80,7 @@ Các giá trị ARN ở trên là định danh tài nguyên, không phải mật
 
 Chưa có remote backend; state mặc định được lưu cục bộ trong từng thư mục môi trường. Giữ state và lock file an toàn, không commit state, không dùng state dev cho prod.
 
-Terraform chưa tự hoàn thiện CNI, credential provider ECR, IAM/provider ID cho Cluster Autoscaler hoặc kubelet serving certificate dùng cho Metrics Server prod. Thực hiện các điều kiện đó trước khi coi Kubernetes đã hoạt động đầy đủ. Xem [k8s/README](../k8s/README.md).
+Bootstrap mới đã bổ sung Flannel CNI và ECR credential provider; xem [thay đổi và giới hạn bootstrap](modules/kubernetes/README.md). Terraform chưa tự hoàn thiện IAM/provider ID cho Cluster Autoscaler hoặc kubelet serving certificate dùng cho Metrics Server prod. Thực hiện và kiểm chứng các điều kiện đó trước khi coi Kubernetes đã hoạt động đầy đủ. Xem [k8s/README](../k8s/README.md).
 
 Terraform tạo Glue job nhưng không upload script ETL hay chạy workflow. Thực hiện bằng [các lệnh ETL](../etl/README.md). Thay đổi user data không tự chạy lại trên control plane đã tồn tại (`user_data_replace_on_change = false`).
 

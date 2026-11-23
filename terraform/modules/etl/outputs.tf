@@ -35,6 +35,10 @@ output "etl_bucket_name" {
   value = var.etl_bucket_name
 }
 
+output "aws_account_id" {
+  value = data.aws_caller_identity.current.account_id
+}
+
 output "script_locations" {
   value = {
     extract   = "s3://${var.etl_bucket_name}/${local.extract_script_key}"

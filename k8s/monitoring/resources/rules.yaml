@@ -1,0 +1,70 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: coco-application
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  groups:
+    - name: coco.application
+      rules:
+        - alert: CocoBackendMetricsUnavailable
+          expr: up{job="coco-backend"} == 0 or absent(up{job="coco-backend"})
+          for: 5m
+          labels:
+            severity: critical
+            namespace: coco
+          annotations:
+            summary: Backend metrics cannot be scraped
+            description: Check Pods, Service endpoints and Prometheus targets.
+        - alert: CocoFrontendUnavailable
+          expr: |
+            probe_success{job="coco-frontend-probe"} == 0
+            or absent(probe_success{job="coco-frontend-probe"})
+          for: 3m
+          labels:
+            severity: critical
+            namespace: coco
+          annotations:
+            summary: Frontend HTTP probe is failing or missing
+        - alert: CocoBackendNotReady
+          expr: |
+            probe_success{job="coco-backend-ready-probe"} == 0
+            or absent(probe_success{job="coco-backend-ready-probe"})
+          for: 3m
+          labels:
+            severity: critical
+            namespace: coco
+          annotations:
+            summary: Backend readiness probe is failing or missing
+            description: Check PostgreSQL and Redis connectivity without modifying data.
+        - alert: CocoBackendHighErrorRate
+          expr: |
+            (sum(rate(marketplace_http_requests_total{status_code=~"5.."}[5m]))
+            / clamp_min(sum(rate(marketplace_http_requests_total[5m])), 0.001) > 0.05)
+            and (sum(increase(marketplace_http_requests_total[5m])) >= 20)
+          for: 5m
+          labels:
+            severity: warning
+            namespace: coco
+          annotations:
+            summary: Backend 5xx exceeds 5 percent with at least 20 requests in 5 minutes
+        - alert: CocoBackendHighLatency
+          expr: |
+            histogram_quantile(0.95,
+              sum by (le) (rate(marketplace_http_request_duration_seconds_bucket[5m]))) > 2
+            and sum(increase(marketplace_http_requests_total[5m])) >= 20
+          for: 10m
+          labels:
+            severity: warning
+            namespace: coco
+          annotations:
+            summary: Backend p95 latency exceeds 2 seconds
+        - alert: CocoPodRestarting
+          expr: increase(kube_pod_container_status_restarts_total{namespace="coco"}[15m]) > 3
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: Application container restarted more than three times in 15 minutes

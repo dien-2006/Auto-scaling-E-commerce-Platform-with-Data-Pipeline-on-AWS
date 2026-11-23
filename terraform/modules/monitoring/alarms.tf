@@ -25,11 +25,11 @@ resource "aws_cloudwatch_metric_alarm" "worker_capacity" {
   tags = var.common_tags
 }
 
-# 2. Backend HTTP 5xx errors
+# 2. Public web HTTP 5xx errors (legacy Terraform/AWS alarm names retained).
 
 resource "aws_cloudwatch_metric_alarm" "backend_5xx" {
   alarm_name        = "${local.name_prefix}-backend-5xx"
-  alarm_description = "Backend returns too many HTTP 5xx responses"
+  alarm_description = "Public web target returns too many HTTP 5xx responses"
 
   namespace   = "AWS/ApplicationELB"
   metric_name = "HTTPCode_Target_5XX_Count"
@@ -43,7 +43,7 @@ resource "aws_cloudwatch_metric_alarm" "backend_5xx" {
 
   dimensions = {
     LoadBalancer = var.alb_arn_suffix
-    TargetGroup  = var.backend_target_group_arn_suffix
+    TargetGroup  = var.web_target_group_arn_suffix
   }
 
   treat_missing_data = "notBreaching"
@@ -52,11 +52,11 @@ resource "aws_cloudwatch_metric_alarm" "backend_5xx" {
   tags = var.common_tags
 }
 
-# 3. Backend p95 latency
+# 3. Public web p95 latency; FastAPI request latency is measured by Prometheus.
 
 resource "aws_cloudwatch_metric_alarm" "backend_latency" {
   alarm_name        = "${local.name_prefix}-backend-latency-high"
-  alarm_description = "Backend p95 response time too high"
+  alarm_description = "Public web target p95 response time too high"
 
   namespace   = "AWS/ApplicationELB"
   metric_name = "TargetResponseTime"
@@ -70,7 +70,7 @@ resource "aws_cloudwatch_metric_alarm" "backend_latency" {
 
   dimensions = {
     LoadBalancer = var.alb_arn_suffix
-    TargetGroup  = var.backend_target_group_arn_suffix
+    TargetGroup  = var.web_target_group_arn_suffix
   }
 
   evaluate_low_sample_count_percentiles = "ignore"

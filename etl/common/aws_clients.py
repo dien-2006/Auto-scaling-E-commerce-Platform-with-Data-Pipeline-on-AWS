@@ -21,8 +21,10 @@ class AWSClients:
         config = Config(
             retries={
                 "mode": "standard",
-                "max_attempts": 3,
-            }
+                "total_max_attempts": 4,
+            },
+            connect_timeout=10,
+            read_timeout=60,
         )
 
         self.sts = self.session.client("sts", config=config)

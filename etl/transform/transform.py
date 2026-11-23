@@ -1,6 +1,10 @@
 
 import sys
 import logging
+import json
+import re
+import boto3
+from botocore.config import Config
 
 from pyspark.context import SparkContext
 from pyspark.sql import functions as F
@@ -21,6 +25,9 @@ args = getResolvedOptions(
         "RAW_PREFIX",
         "SILVER_PREFIX",
         "GOLD_PREFIX",
+        "AWS_REGION",
+        "WORKFLOW_NAME",
+        "WORKFLOW_RUN_ID",
     ],
 )
 
@@ -28,6 +35,12 @@ BUCKET = args["S3_BUCKET"]
 RAW = args["RAW_PREFIX"].strip("/")
 SILVER = args["SILVER_PREFIX"].strip("/")
 GOLD = args["GOLD_PREFIX"].strip("/")
+BATCH_ID = args["WORKFLOW_RUN_ID"]
+if not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", BATCH_ID):
+    raise ValueError("Invalid workflow run ID")
+s3 = boto3.client("s3", region_name=args["AWS_REGION"],
+                  config=Config(retries={"mode": "standard", "total_max_attempts": 4},
+                                connect_timeout=10, read_timeout=60))
 
 sc = SparkContext.getOrCreate()
 glue_context = GlueContext(sc)
@@ -52,13 +65,13 @@ PRIMARY_KEYS = {
 
 
 def s3_path(zone, table):
-    return f"s3://{BUCKET}/{zone}/{table}/"
+    return f"s3://{BUCKET}/{zone}/{table}/runs/{BATCH_ID}/"
 
 
 def write_parquet(df, path):
     (
         df.write
-        .mode("overwrite")
+        .mode("errorifexists")
         .format("parquet")
         .option("compression", "snappy")
         .save(path)
@@ -69,27 +82,31 @@ def write_parquet(df, path):
 # 1. RAW -> SILVER
 # ==========================================
 
-def build_silver():
+def build_silver(source):
     silver_tables = {}
 
     for table, pk in PRIMARY_KEYS.items():
         logger.info("Cleaning table: %s", table)
 
         raw_path = s3_path(
-            RAW, f"{table}/current"
+            RAW, table
         )
 
-        df = spark.read.parquet(raw_path)
+        if source[table]["location"] != raw_path:
+            raise ValueError(f"Unexpected raw path for {table}")
+        df = spark.read.parquet(raw_path).persist()
 
         if pk not in df.columns:
             raise ValueError(
                 f"Missing primary key {pk} in {table}"
             )
 
-        df = (
-            df.dropna(subset=[pk])
-            .dropDuplicates([pk])
-        )
+        if df.count() != source[table]["rows"]:
+            raise ValueError(f"Raw row count mismatch for {table}")
+        if df.filter(F.col(pk).isNull()).limit(1).count():
+            raise ValueError(f"Null primary keys in {table}; refusing to discard rows")
+        if df.groupBy(pk).count().filter(F.col("count") > 1).limit(1).count():
+            raise ValueError(f"Duplicate primary keys in {table}; refusing to choose arbitrary rows")
 
         silver_path = s3_path(SILVER, table)
 
@@ -100,6 +117,14 @@ def build_silver():
         logger.info("Silver completed: %s", table)
 
     return silver_tables
+
+
+def write_report(df, table):
+    location = s3_path(GOLD, table)
+    write_parquet(df, location)
+    return {"location": location, "rows": df.count(),
+            "columns": [{"name": field.name, "type": field.dataType.simpleString()}
+                        for field in df.schema.fields]}
 
 
 # ==========================================
@@ -156,12 +181,10 @@ def build_product_category_summary(tables):
         )
     )
 
-    write_parquet(
-        result,
-        s3_path(GOLD, "product_category_summary"),
-    )
+    report = write_report(result, "product_category_summary")
 
     logger.info("Gold product category summary completed")
+    return report
 
 
 # ==========================================
@@ -260,12 +283,10 @@ def build_shop_sales_summary(tables):
         )
     )
 
-    write_parquet(
-        result,
-        s3_path(GOLD, "shop_sales_summary"),
-    )
+    report = write_report(result, "shop_sales_summary")
 
     logger.info("Gold shop sales summary completed")
+    return report
 
 
 # ==========================================
@@ -313,12 +334,10 @@ def build_daily_sales_summary(tables):
         )
     )
 
-    write_parquet(
-        result,
-        s3_path(GOLD, "daily_sales_summary"),
-    )
+    report = write_report(result, "daily_sales_summary")
 
     logger.info("Gold daily sales summary completed")
+    return report
 
 
 # ==========================================
@@ -328,13 +347,29 @@ def build_daily_sales_summary(tables):
 def main():
     logger.info("Starting COCO Transform")
 
-    tables = build_silver()
-
-    build_product_category_summary(tables)
-    build_shop_sales_summary(tables)
-    build_daily_sales_summary(tables)
-
-    job.commit()
+    with s3.get_object(Bucket=BUCKET, Key=f"{RAW}/_runs/{BATCH_ID}.json")["Body"] as body:
+        source = json.loads(body.read())
+    if (source.get("version") != 1 or source.get("run_id") != BATCH_ID or
+            source.get("workflow") != args["WORKFLOW_NAME"] or
+            set(source.get("tables", {})) != set(PRIMARY_KEYS)):
+        raise ValueError("Missing or incompatible complete raw batch manifest")
+    tables = build_silver(source["tables"])
+    try:
+        reports = {
+            "product_category_summary": build_product_category_summary(tables),
+            "shop_sales_summary": build_shop_sales_summary(tables),
+            "daily_sales_summary": build_daily_sales_summary(tables),
+        }
+        job.commit()
+        s3.put_object(
+            Bucket=BUCKET, Key=f"{GOLD}/_runs/{BATCH_ID}.json",
+            Body=json.dumps({"version": 1, "run_id": BATCH_ID,
+                             "workflow": args["WORKFLOW_NAME"], "reports": reports}).encode(),
+            ContentType="application/json", ServerSideEncryption="AES256",
+        )
+    finally:
+        for df in tables.values():
+            df.unpersist()
 
     logger.info("COCO Transform succeeded")
 

@@ -39,6 +39,7 @@ resource "aws_glue_job" "extract" {
     "--DB_SECRET_ARN" = var.db_secret_arn
     "--S3_BUCKET"     = var.etl_bucket_name
     "--RAW_PREFIX"    = "raw/"
+    "--TempDir"       = "s3://${var.etl_bucket_name}/tmp/extract/"
   }
 
   tags = var.common_tags
@@ -86,6 +87,8 @@ resource "aws_glue_job" "transform" {
     "--RAW_PREFIX"    = "raw/"
     "--SILVER_PREFIX" = "silver/"
     "--GOLD_PREFIX"   = "gold/"
+    "--AWS_REGION"    = var.aws_region
+    "--TempDir"       = "s3://${var.etl_bucket_name}/tmp/transform/"
   }
 
   tags = var.common_tags

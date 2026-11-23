@@ -4,9 +4,11 @@ locals {
 }
 
 resource "aws_lb" "main" {
-  name               = "${local.name_prefix}-alb"
-  internal           = false
-  load_balancer_type = "application"
+  name                       = "${local.name_prefix}-alb"
+  internal                   = false
+  load_balancer_type         = "application"
+  xff_header_processing_mode = "append"
+  enable_xff_client_port     = false
 
   security_groups = [
     var.alb_sg_id

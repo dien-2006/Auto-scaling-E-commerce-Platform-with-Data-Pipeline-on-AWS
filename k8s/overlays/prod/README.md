@@ -1,5 +1,12 @@
 # Chạy ứng dụng Kubernetes prod
 
+Đây là checklist cho cấu hình prod riêng, không phải luồng dev đang triển khai.
+Không apply khi còn placeholder: ngoài image, phải điền public origin HTTPS thật
+cho cả hai ConfigMap, checksum runtime cho Pod và Secret đúng tên `MARKETPLACE_*`.
+Prod mặc định chưa bật OTP và chưa cấp shared worker S3 access; cần chuẩn bị Redis/
+SMTP và IAM workload identity riêng trước khi bật các chức năng tương ứng.
+Không dùng HTTP/local mode hoặc script `run-dev-task.py` để triển khai prod.
+
 Các lệnh chạy từ **gốc repo** với kubeconfig context `coco-prod` đã được cấu hình và có đường mạng tới Kubernetes API private.
 
 1. Hoàn thành [các điều kiện trong README Kubernetes](../../README.md): node Ready, CNI/ECR authentication hoạt động.

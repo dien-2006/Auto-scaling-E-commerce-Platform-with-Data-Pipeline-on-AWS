@@ -1,0 +1,35 @@
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: coco-frontend
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  jobName: coco-frontend-probe
+  interval: 30s
+  scrapeTimeout: 15s
+  module: http_2xx
+  prober:
+    url: coco-blackbox.monitoring.svc.cluster.local:9115
+  targets:
+    staticConfig:
+      static: [http://coco-frontend.coco.svc.cluster.local/]
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: coco-backend-ready
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  jobName: coco-backend-ready-probe
+  interval: 30s
+  scrapeTimeout: 15s
+  module: http_2xx
+  prober:
+    url: coco-blackbox.monitoring.svc.cluster.local:9115
+  targets:
+    staticConfig:
+      static: [http://coco-backend.coco.svc.cluster.local/health/ready]

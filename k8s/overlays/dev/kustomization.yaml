@@ -1,11 +1,27 @@
 namespace: coco
 resources:
   - ../../base
+  - redis.yaml
 configMapGenerator:
   - name: coco-backend-config
     literals:
-      - NODE_ENV=development
-      - PORT=3000
+      - MARKETPLACE_ENVIRONMENT=local
+      - MARKETPLACE_LOG_LEVEL=INFO
+      - MARKETPLACE_PUBLIC_ORIGIN=http://REPLACE_WITH_DEV_ALB
+      - MARKETPLACE_ADDITIONAL_ORIGINS=[]
+      - MARKETPLACE_S3_BUCKET=ecommerce-dev-product-images-858525799322-ap-southeast-1
+      - MARKETPLACE_S3_REGION=ap-southeast-1
+      - MARKETPLACE_S3_PUBLIC_BASE_URL=https://REPLACE_WITH_CLOUDFRONT
+      - MARKETPLACE_OTP_ENABLED=true
+      - MARKETPLACE_OTP_EMAIL_PROVIDER=smtp
+      - MARKETPLACE_OTP_REDIS_URL=redis://coco-otp-redis:6379/0
+  - name: coco-frontend-config
+    literals:
+      - INTERNAL_API_URL=http://coco-backend.coco.svc.cluster.local
+      - MARKETPLACE_PUBLIC_ORIGIN=http://REPLACE_WITH_DEV_ALB
+      - MARKETPLACE_ADDITIONAL_ORIGINS=[]
+      - MARKETPLACE_TRUST_PROXY_HEADERS=true
+      - MARKETPLACE_PROXY_MODE=alb
 images:
   - name: coco-frontend
     newName: ACCOUNT_ID.dkr.ecr.ap-southeast-1.amazonaws.com/ecommerce/dev/frontend

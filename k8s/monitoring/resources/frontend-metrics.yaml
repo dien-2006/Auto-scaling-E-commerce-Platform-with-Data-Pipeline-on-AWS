@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: coco-frontend-metrics
+  namespace: coco
+  labels:
+    app: coco-frontend
+    component: metrics
+spec:
+  type: ClusterIP
+  selector:
+    app: coco-frontend
+  ports:
+    - name: metrics
+      port: 9091
+      targetPort: 9091
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: coco-frontend
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  jobLabel: app
+  namespaceSelector:
+    matchNames: [coco]
+  selector:
+    matchLabels:
+      app: coco-frontend
+      component: metrics
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s

@@ -1,0 +1,85 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coco-blackbox
+  namespace: monitoring
+data:
+  blackbox.yml: |
+    modules:
+      http_2xx:
+        prober: http
+        timeout: 10s
+        http:
+          method: GET
+          preferred_ip_protocol: ip4
+          ip_protocol_fallback: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coco-blackbox
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: coco-blackbox
+  template:
+    metadata:
+      labels:
+        app: coco-blackbox
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: blackbox
+          image: quay.io/prometheus/blackbox-exporter:v0.27.0
+          args: [--config.file=/config/blackbox.yml]
+          ports:
+            - name: http
+              containerPort: 9115
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          readinessProbe:
+            tcpSocket:
+              port: http
+          livenessProbe:
+            tcpSocket:
+              port: http
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: coco-blackbox
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: coco-blackbox
+  namespace: monitoring
+spec:
+  type: ClusterIP
+  selector:
+    app: coco-blackbox
+  ports:
+    - name: http
+      port: 9115
+      targetPort: http

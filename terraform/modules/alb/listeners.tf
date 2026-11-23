@@ -48,7 +48,8 @@ resource "aws_lb_listener" "https" {
   }
 }
 
-# HTTP /api/* -> Backend
+# Browser API routes belong to Next.js (BFF); FastAPI is reached via ClusterIP.
+# Keep the existing rule addresses so this repair does not require deleting rules.
 resource "aws_lb_listener_rule" "backend_http" {
   count = var.enable_https ? 0 : 1
 
@@ -57,7 +58,7 @@ resource "aws_lb_listener_rule" "backend_http" {
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.backend.arn
+    target_group_arn = aws_lb_target_group.frontend.arn
   }
 
   condition {
@@ -67,7 +68,7 @@ resource "aws_lb_listener_rule" "backend_http" {
   }
 }
 
-# HTTPS /api/* -> Backend
+# HTTPS uses the same Next.js proxy path as HTTP.
 resource "aws_lb_listener_rule" "backend_https" {
   count = var.enable_https ? 1 : 0
 
@@ -76,7 +77,7 @@ resource "aws_lb_listener_rule" "backend_https" {
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.backend.arn
+    target_group_arn = aws_lb_target_group.frontend.arn
   }
 
   condition {

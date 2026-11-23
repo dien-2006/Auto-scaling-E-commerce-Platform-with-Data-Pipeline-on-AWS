@@ -82,7 +82,7 @@ module "kubernetes" {
 
   common_tags = local.common_tags
 
-  depends_on = [module.iam, module.security]
+  depends_on = [module.network, module.iam, module.security]
 }
 
 
@@ -101,8 +101,8 @@ module "alb" {
   frontend_node_port = 30080
   backend_node_port  = 30081
 
-  frontend_health_path = "/"
-  backend_health_path  = "/health"
+  frontend_health_path = "/health/live"
+  backend_health_path  = "/health/ready"
 
   enable_https    = true
   certificate_arn = var.acm_certificate_arn
@@ -199,8 +199,8 @@ module "monitoring" {
 
   alb_arn_suffix = module.alb.alb_arn_suffix
 
-  backend_target_group_arn_suffix = (
-    module.alb.backend_target_group_arn_suffix
+  web_target_group_arn_suffix = (
+    module.alb.frontend_target_group_arn_suffix
   )
 
   db_instance_identifier = module.database.db_instance_id

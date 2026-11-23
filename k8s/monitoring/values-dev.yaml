@@ -1,5 +1,20 @@
-# Lightweight educational deployment; data is ephemeral if pods are recreated.
+# kube-prometheus-stack 93.7.0. Requires EBS CSI and SMTP/Grafana Secrets.
+# kubeadm keeps these components on loopback; do not open them for scraping here.
+kubeEtcd:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeProxy:
+  enabled: false
+kubelet:
+  serviceMonitor:
+    tlsConfig:
+      insecureSkipVerify: true # dev kubeadm self-signed serving certificates only
 grafana:
+  podAnnotations:
+    cluster-autoscaler.kubernetes.io/safe-to-evict: 'false'
   admin:
     existingSecret: grafana-admin
     userKey: admin-user
@@ -7,16 +22,61 @@ grafana:
   service:
     type: ClusterIP
   persistence:
-    enabled: false
+    enabled: true
+    storageClassName: coco-monitoring-gp3
+    size: 2Gi
+  sidecar:
+    dashboards:
+      enabled: true
+      searchNamespace: monitoring
+    datasources:
+      uid: prometheus
 prometheus:
   prometheusSpec:
+    podMetadata:
+      annotations:
+        cluster-autoscaler.kubernetes.io/safe-to-evict: 'false'
     retention: 3d
+    retentionSize: 8GB
+    externalLabels:
+      cluster: coco-dev
+    serviceMonitorSelector:
+      matchLabels:
+        release: monitoring
+    probeSelector:
+      matchLabels:
+        release: monitoring
+    ruleSelector:
+      matchLabels:
+        release: monitoring
     resources:
       requests:
-        cpu: 100m
-        memory: 512Mi
+        cpu: 200m
+        memory: 768Mi
       limits:
-        memory: 1Gi
-    storageSpec: {}
+        memory: 2Gi
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: coco-monitoring-gp3
+          accessModes: [ReadWriteOnce]
+          resources:
+            requests:
+              storage: 10Gi
 alertmanager:
   enabled: true
+  alertmanagerSpec:
+    podMetadata:
+      annotations:
+        cluster-autoscaler.kubernetes.io/safe-to-evict: 'false'
+    useExistingSecret: true
+    configSecret: alertmanager-smtp
+    secrets: [alertmanager-smtp-auth]
+    storage:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: coco-monitoring-gp3
+          accessModes: [ReadWriteOnce]
+          resources:
+            requests:
+              storage: 2Gi

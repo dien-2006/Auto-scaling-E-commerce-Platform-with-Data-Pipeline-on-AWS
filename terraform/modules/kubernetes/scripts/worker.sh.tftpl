@@ -1,31 +1,40 @@
 
-# Wait for the control plane to publish a join command
+# An existing kubelet configuration requires inspection rather than an automatic reset.
+if [[ -f /etc/kubernetes/kubelet.conf ]]; then
+  echo "Worker already has kubelet.conf; skipping duplicate kubeadm join"
+else
+  # Re-fetch credentials when a token is stale or the API is not yet reachable.
+  # Parameter Store can still contain a command from a previously destroyed cluster.
+  join_deadline=$((SECONDS + 1800))
+  worker_joined=false
+  while (( SECONDS < join_deadline )); do
+    JOIN_CMD=$(aws ssm get-parameter \
+      --region "${aws_region}" \
+      --name "${join_parameter_name}" \
+      --with-decryption \
+      --query "Parameter.Value" \
+      --output text 2>/dev/null) || JOIN_CMD=""
 
-JOIN_CMD=""
+    if [[ "$JOIN_CMD" == "kubeadm join ${control_plane_private_ip}:6443 "* ]]; then
+      read -r -a join_arguments <<< "$JOIN_CMD"
+      if timeout 90s "$${join_arguments[@]}" \
+        --cri-socket unix:///run/containerd/containerd.sock; then
+        worker_joined=true
+        break
+      fi
+      if [[ -f /etc/kubernetes/kubelet.conf ]]; then
+        echo "Join failed after writing kubelet.conf; inspect before retrying" >&2
+        exit 1
+      fi
+    fi
+    echo "Waiting for a working join command for the current control plane"
+    sleep 15
+  done
 
-for attempt in $(seq 1 120); do
-  JOIN_CMD=$(aws ssm get-parameter \
-    --region "${aws_region}" \
-    --name "${join_parameter_name}" \
-    --with-decryption \
-    --query "Parameter.Value" \
-    --output text 2>/dev/null) || true
-
-  if [[ "$JOIN_CMD" == kubeadm\ join* ]]; then
-    break
+  if [[ "$worker_joined" != true ]]; then
+    echo "No successful Kubernetes join within the bootstrap deadline" >&2
+    exit 1
   fi
-
-  JOIN_CMD=""
-  sleep 15
-done
-
-if [[ -z "$JOIN_CMD" ]]; then
-  echo "No Kubernetes join command available"
-  exit 1
 fi
 
-# Join worker to Kubernetes cluster
-$JOIN_CMD \
-  --cri-socket unix:///run/containerd/containerd.sock
-
-echo "Worker joined Kubernetes cluster"
+echo "Worker join configuration is present; verify Node Ready from the control plane"

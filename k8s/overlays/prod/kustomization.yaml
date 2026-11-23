@@ -4,8 +4,16 @@ resources:
 configMapGenerator:
   - name: coco-backend-config
     literals:
-      - NODE_ENV=production
-      - PORT=3000
+      - MARKETPLACE_ENVIRONMENT=production
+      - MARKETPLACE_PUBLIC_ORIGIN=https://REPLACE_WITH_PROD_HOST
+      - MARKETPLACE_S3_REGION=ap-southeast-1
+      - MARKETPLACE_OTP_ENABLED=false
+  - name: coco-frontend-config
+    literals:
+      - INTERNAL_API_URL=http://coco-backend.coco.svc.cluster.local
+      - MARKETPLACE_PUBLIC_ORIGIN=https://REPLACE_WITH_PROD_HOST
+      - MARKETPLACE_TRUST_PROXY_HEADERS=true
+      - MARKETPLACE_PROXY_MODE=alb
 images:
   - name: coco-frontend
     newName: ACCOUNT_ID.dkr.ecr.ap-southeast-1.amazonaws.com/ecommerce/prod/frontend

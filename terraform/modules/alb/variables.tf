@@ -44,13 +44,13 @@ variable "backend_node_port" {
 variable "frontend_health_path" {
   description = "Frontend health check path"
   type        = string
-  default     = "/"
+  default     = "/health/live"
 }
 
 variable "backend_health_path" {
   description = "Backend health check path"
   type        = string
-  default     = "/health"
+  default     = "/health/ready"
 }
 
 variable "enable_https" {

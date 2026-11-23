@@ -1,1 +1,5 @@
 aws_region = "ap-southeast-1"
+
+# Keep origins exact. Add the HTTPS dev website after its domain is configured.
+# This does not change the application's current bucket or copy existing images.
+image_upload_origins = ["http://localhost:3001"]

@@ -1,0 +1,50 @@
+# aws-ebs-csi-driver chart 2.67.1; driver pinned to v1.67.2.
+# Renderer adds hostNetwork + ClusterFirstWithHostNet to the controller only.
+image:
+  tag: v1.67.2
+# Installed as reviewed manifests through SSM, not through the Helm test lifecycle.
+helmTester:
+  enabled: false
+controller:
+  region: ap-southeast-1
+  replicaCount: 1
+  k8sTagClusterId: ecommerce-dev-k8s
+  nodeSelector:
+    node-role.kubernetes.io/control-plane: ""
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+  updateStrategy:
+    type: Recreate
+    rollingUpdate: null
+  podDisruptionBudget:
+    enabled: false
+  env:
+    - name: AWS_PROFILE
+      value: coco-ebs-csi
+    - name: AWS_CONFIG_FILE
+      value: /etc/coco-aws/config
+    - name: AWS_SDK_LOAD_CONFIG
+      value: "true"
+    - name: AWS_STS_REGIONAL_ENDPOINTS
+      value: regional
+  volumes:
+    - name: aws-role-config
+      configMap:
+        name: coco-ebs-csi-aws-config
+  volumeMounts:
+    - name: aws-role-config
+      mountPath: /etc/coco-aws
+      readOnly: true
+node:
+  enableWindows: false
+  hostNetwork: true
+  # Only workers run stateful application Pods. Avoid the controller's host ports.
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: node-role.kubernetes.io/control-plane
+                operator: DoesNotExist

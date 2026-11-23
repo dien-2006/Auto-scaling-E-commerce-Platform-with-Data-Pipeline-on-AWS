@@ -47,6 +47,9 @@ module "iam" {
   project_name = local.project_name
   environment  = local.environment
 
+  enable_image_storage_access = true
+  images_bucket_arn           = module.storage.images_bucket_arn
+
   common_tags = local.common_tags
 }
 
@@ -77,13 +80,16 @@ module "kubernetes" {
   control_plane_instance_type = "t3.medium"
   worker_instance_type        = "t3.medium"
 
-  worker_min_size         = 1
+  worker_min_size         = 2
   worker_desired_capacity = 2
   worker_max_size         = 4
 
+  # Dev backend uses the shared worker role through IMDSv2 from a Pod.
+  worker_imds_hop_limit = 2
+
   common_tags = local.common_tags
 
-  depends_on = [module.iam, module.security]
+  depends_on = [module.network, module.iam, module.security]
 }
 
 
@@ -104,8 +110,8 @@ module "alb" {
   frontend_node_port = 30080
   backend_node_port  = 30081
 
-  frontend_health_path = "/"
-  backend_health_path  = "/health"
+  frontend_health_path = "/health/live"
+  backend_health_path  = "/health/ready"
 
   enable_https = false
 
@@ -152,6 +158,11 @@ module "storage" {
   environment  = local.environment
 
   noncurrent_version_days = 30
+  # Keep the list length known on first plan; ALB DNS is resolved during apply.
+  image_upload_origins = concat(
+    var.image_upload_origins,
+    ["http://${module.alb.alb_dns_name}"]
+  )
 
   common_tags = local.common_tags
 }
@@ -202,8 +213,8 @@ module "monitoring" {
 
   alb_arn_suffix = module.alb.alb_arn_suffix
 
-  backend_target_group_arn_suffix = (
-    module.alb.backend_target_group_arn_suffix
+  web_target_group_arn_suffix = (
+    module.alb.frontend_target_group_arn_suffix
   )
 
   db_instance_identifier = module.database.db_instance_id

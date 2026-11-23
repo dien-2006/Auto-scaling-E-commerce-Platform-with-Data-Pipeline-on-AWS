@@ -1,0 +1,99 @@
+﻿email,password_hash,full_name,phone,user_role,user_status
+anhdt.b24kd001@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$1nw93qdxSNbK1vqN2hue0g$4vSz+kLfzqZFKEGUo3FVzPYHGsvV1US8ku6CoA+43nw",Đặng Thế Anh,0834133553,USER,ACTIVE
+anhdt.b24kd002@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$tdJSaLe11/mbpJaDnHlfiQ$Jh4EzgMYJu4IStn8+q/7mLRY7jVPON3yqduZ6WGhhaw",Đinh Tiến Anh,0974429431,USER,ACTIVE
+anhhdt.b24kd003@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$RXclEIjNJKQrDXbfnIj1+g$MHi6EiufMvkE4n1AKN8j22iRXFnPIB75b/M58rqYxFs",Hoàng Đinh Tuấn Anh,0916913567,USER,ACTIVE
+anhkv.b24kd004@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$OeqrmJbJwgG3gomVvaHqpw$Qa1noi79ldAvftMPsxye73FhOgmut6gXhDYEYbBAPRI",Kim Việt Anh,0876586740,USER,ACTIVE
+anhlt.b24kd005@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$uW144qfKmVQuMJTtKRXEBQ$JmjNJpxq5CIkYCD5PEwT3Wh6ZS5ceRvFKh7Kw8bdiq0",Lê Thế Anh,0941578754,USER,ACTIVE
+anhndv.b24kd006@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$/XdVuHhCV2GH5CYQjGyXsw$SoWDYfuAKx3QYQkhkNIp3yql8mrCDOqa6lv3+ykIRc4",Nguyễn Đình Việt Anh,0377947001,USER,ACTIVE
+anhnh.b24kd007@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$1maQSpVsjAPWDTJcXX1gDA$4MyRv97wGj2yqWgxO5FLMozXmNdKHRZzEX6oRJ0V9CE",Nguyễn Hồng Anh,0976614517,USER,ACTIVE
+anhntt.b24kd008@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$X9M6CWYEt3QrPodXdcW2Hw$PV24x94jSZWX8wMHYnTDIsoscYNiQcxRfPjC1z6Kcek",Nguyễn Tài Tuân Anh,0862990692,USER,ACTIVE
+anhntq.b24kd009@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$S2VuhVKeVK23dMXiknrmlw$SKcuhtLghVpZdfAco8Bx8pHe5FfwX6fA5poISNrTud8",Nguyễn Thị Quỳnh Anh,0354386395,USER,ACTIVE
+anhnvh.b24kd010@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$JOLGZN+07QNbqaY2cHJXRQ$tTnoh39r9omdpZMyYmLo2QXNEBlhd29vrU/WxIpgv3E",Nguyễn Vũ Hoàng Anh,0564645815,USER,ACTIVE
+anhvt.b24kd011@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$PX2dfR266wfdl2TRZQ4KRQ$zhbEyOuSnQl7LmB389w/h/9S9dZ0ZrIVN/XV7EKtB9k",Văn Tiến Anh,0356371084,USER,ACTIVE
+bacnx.b24kd012@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$JuzmQ1lO+qvtF2usRfVDjA$GuIMzr6j/WnfsKVwDFyLbWdhHvoJAcIlQBe/axwDz/o",Nguyễn Xuân Bắc,0382266596,USER,ACTIVE
+baonv.b24kd013@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$c+P/Ty9bWkw3mOQx/1bTvQ$vT69vop4vAuBr21QvA/hPaW+QrfoQ5jeabrm37r2Oww",Nguyễn Văn Bảo,0333218909,USER,ACTIVE
+cuongpm.b24kd014@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$N3LjGEQCaP0w/PWdUvqfRg$JrZOMO4+AtbYZr//uFjWFp0W0MXN3oXbsvB9JeynLak",Phạm Mạnh Cường,0886108858,USER,ACTIVE
+diennn.b24kd016@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$HPOsZiBxW39Cg31QpKU7Aw$GdpGnwybF7ohBtAQrFJl8i+jWTh0ROrNUISW+pW7P9U",Nguyễn Ngọc Diện,0971978742,USER,ACTIVE
+dongpb.b24kd017@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$MRsyexjWlw8DzhJ0sUEG7g$BeaCNBJvfY+dOAOGTwdoLb5xAYTUROahkNmNJfScL5s",Phan Bá Đồng,0355272636,USER,ACTIVE
+ducnm.b24kd018@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$HNF6mp5JM8jQLSqGDWs78Q$3x6V5yIZl4IctJsVgrHTz38n8dE7Z4gSysi94gJcIiw",Nguyễn Minh Đức,0918326688,USER,ACTIVE
+ducnv.b24kd019@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$AIb4XeKmcO1Y6hD419SYWQ$Gdfm2nGFQaTy6hN6AHkohe/mozADqWJ4H/oIzYLXiTk",Nguyễn Viết Đức,0965453592,USER,ACTIVE
+dungpa.b24kd021@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$Y+6YcA8LRQ/2UHGMwUbpbw$kahnH3AkNtMRgvN5bRrLBlLDst9DOWHgu7arXhrTvW0",Phạm Anh Dũng,0924686236,USER,ACTIVE
+dungtv.b24kd022@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$lojYCCHKrSRfihJwM/EKUA$TjhwjexXj8l5vx4WvLrmL0JJGmdtGqObWKb3HLAPkns",Tô Văn Dũng,0868266950,USER,ACTIVE
+duonglq.b24kd023@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$Z8CiMwoC6smLeF8v+RZEWw$rhG2S3cPVrwY8u+rZYQFagPtvSsWobY8tYms8NgzWJo",Lê Quang Dương,0978168904,USER,ACTIVE
+duynm.b24kd024@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$GxRJcJRzc5JNKjG5x4YY8g$pAGUIwWaxzrInGmL6MCkY3hP+jt/8dhnjvR/6PuXQhI",Nguyễn Mạnh Duy,0948912695,USER,ACTIVE
+hadvh.b24kd025@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$JsttZ0hgR8BnCBK1GPW0mg$NmmEPUMFxnVYcPVUt4wrGY0yEciH9EHlm2Tk8YnYAE4",Đậu Việt Hoàng Hà,0978803783,USER,ACTIVE
+hains.b24kd026@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$b/JlCbR2nZ88ouvUX4eOow$MHneIop85up6wNEP3nB8CZvKz4VlmsewKJfY0+ybTQg",Nguyễn Sơn Hải,0931158268,USER,ACTIVE
+haint.b24kd027@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$ejvU6oBsRXju5Vwj/VGjjw$jRxlNgEkBevSu7Rh/F3GU1r7Go21USMBcSaTPaa6SnQ",Nguyễn Thanh Hải,0336640955,USER,ACTIVE
+hiendt.b24kd028@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$Gwqeead436jslSs9Tv6CRw$cGBZARH6GwfaEYkJa2euu+5tRobKogwfI7YHR2GmenI",Đặng Thị Hiền,0965265214,USER,ACTIVE
+hieunm.b24kd029@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$wiRX1tEch7XFFu7DB126Sw$1JfhWzP9U9z7RhP0XBfjI7bcu9ectSZp3betNxJH5L0",Nguyễn Minh Hiếu,0362470130,USER,ACTIVE
+hoangnv.b24kd030@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$1krNwK0ibc88FWJpFpu0aA$XO8SCIBIZyl7Ej5jxxRAoG3uxiZopI6WwTO5PI/R9Co",Nguyễn Việt Hoàng,0971757556,USER,ACTIVE
+hoangtv.b24kd031@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$F99ZP5E9VJmgnXkbVS94iA$6Fe8R+qgO0QMHvhYVLT0B+xY2wcuqY2OjS2ryQO1NM0",Trịnh Vũ Hoàng,0971868916,USER,ACTIVE
+hungtd.b24kd032@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$cT7YffDpe+AgzaBm6NY4BQ$ktgoxsqs/LrUIvjTiI6VvoCIJ5hzCoQwMCa2lt1xtPk",Trần Đức Hùng,0386514289,USER,ACTIVE
+hungdv.b24kd033@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$I6LIREWtTim77xXB35JJPg$+ohty5cubFa9KQygZG0RQb8KGU7JKYMtBfOHlN0mMHk",Đặng Việt Hưng,0358464742,USER,ACTIVE
+hungtt.b24kd034@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$IOIkYEvjBsbVj5eFbONM/A$I8dWph50TVQMXdkx21F57SBz0FnnGmo+FWfZVFGI/vQ",Trần Tuấn Hưng,0902125476,USER,ACTIVE
+huynq.b24kd036@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$IyvEJgP07WukKg/NshZD9w$+2I2P4UMGv3RTffYq1Rus7KrvkPlQCE5Cct36+YFnu8",Nguyễn Quang Huy,0388324763,USER,ACTIVE
+huynq.b24kd037@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$IGmq88Hxwy96596Az4ligg$5r9kZXr9Nfp8l4y4FtaSHyHgblvfrQ9wUxC92Hz4huE",Nguyễn Quang Huy,0342333027,USER,ACTIVE
+huynv.b24kd038@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$/fev6ZzmCbeRgS6+TDFPlA$4quBydYMEKOyope2JMJ+CxNWesdnXfaEXgoRwB4OJ68",Nguyễn Vũ Huy,0976526188,USER,ACTIVE
+huypd.b24kd039@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$cXm4LUkG56+qiuoSt1hhSQ$M+fZP3U6kDGcwZNHydai4TW8F21y8q1Zp5QZKRUCT6o",Phạm Đức Huy,0943347756,USER,ACTIVE
+khanhla.b24kd040@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$9AnWaQmLRMw4t1K9V4cQRQ$BvQUlWaveD07Ey7O0fDMislVIjGlt7vZmomwRDQ3PzE",Lê An Khanh,0385181668,USER,ACTIVE
+khanhpnt.b24kd041@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$2mBok0eeOUHWZNh5uzI9Kg$z51TyH8G+Mfe5dpkMDl9yt1f/owWClIUswI0CjVCql0",Phan Nguyễn Trung Khánh,0989471978,USER,ACTIVE
+khoapa.b24kd042@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$oE22O+3FJfObKx6144pbBg$EaNJu8C3MLxM9NlrfuhQt1gBaciWJVEf+MqACC8HtuQ",Phạm Anh Khoa,0776164105,USER,ACTIVE
+kietnt.b24kd043@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$zIMsyzoQEzM1+Nj4g0AO2A$GOVMOy5ui/mJv3cz/1ZCpLut7qyi8lqKFlHeArxjFCI",Nguyễn Trọng Kiệt,0358335408,USER,ACTIVE
+lamdq.b24kd044@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$Sb/x8WOxPz1Xb8MUvWhMbg$1wfJTO7lOkJmLgKmx9G8MdLAgSXKLvRi7TUH2vWvTOQ",Dương Quang Lâm,0982858465,USER,ACTIVE
+lanlvh.b24kd045@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$zsTz9FNsd7Jc3B3hidVf7Q$97XlIhyT27UlpmaFR76n4i+hdElnD2TmqlEx8IsvnVA",Lê Viết Hoàng Lân,0915257396,USER,ACTIVE
+linhdk.b24kd046@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$1jHHJRoM2IU4Q3DcH45d8A$b5w8SW7j1KZhSSF7tuhyfHYFMFaff4JFz/AUC3v+Cc4",Đỗ Khánh Linh,0384564395,USER,ACTIVE
+longhhh.b24kd047@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$NG/zEBNZm/uhaimgKQUyAw$oJPqgODmPOwDprgxLRjh4qv4razt2Kc7q5RaTjP8wv8",Hà Huy Hải Long,0869685325,USER,ACTIVE
+longnt.b24kd048@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$rCCeXkss1Zh0EVf9hflkyg$D6od4TAquypOew07/ZS3AvUcp9BYJxJH8DDLxmIdyvw",Nguyễn Thịnh Long,0338322114,USER,ACTIVE
+longnt.b24kd049@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$tuxUrcg1P7rBHYUC5TaXhA$Ixw8ejkMY+UTSiIyPkTW5fI+J7g4YaZGK0o34tLJ9os",Nguyễn Tiến Long,0366621122,USER,ACTIVE
+manhbk.b24kd050@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$hK6OhnlHcqPw0qvrvaGt9g$3Pu2ZjIud4Q9bQ/TU29fMlypla/7LVsqFD70BbXd8rE",Bùi Khắc Mạnh,0345815906,USER,ACTIVE
+minhcdn.b24kd051@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$R6V1arNpAewrdApyh6kKhA$jKxtDuGlk+XUTqy9vW6IPmkO7I2a66Xv3SISv+KCQkY",Chu Đức Nhật Minh,0867788204,USER,ACTIVE
+minhdd.b24kd052@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$B0JZ2wTZ1s4UFLFVcZZJXg$tLc2F5+bNOSz/aZ86pW1+Sy62bBxKGDcwpYF3vs9RPI",Đinh Đức Minh,0369651411,USER,ACTIVE
+minhhn.b24kd053@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$EWXQKdZz7+lygsSnGeUMzA$GcoGlPmXqbJ4zkup8HAoGzx9b/W9Sw0deMw44Tj3wrY",Hoàng Nhật Minh,0395794185,USER,ACTIVE
+minhlq.b24kd054@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$n7xi9UBn2wXOpLbppfiebg$cpodGBABukwvDGXfGx/PFeM0efN2OeFVIYYCsET60h4",Lê Quang Minh,0854180206,USER,ACTIVE
+minhnd.b24kd055@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$wC1voTTLi973TwP84/Z22A$nMRaVbbcvLXa7Ca0JfJJwVsymOoCIDf1iYmos7l7mhI",Nguyễn Đăng Minh,0978154513,USER,ACTIVE
+minhpd.b24kd056@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$JlYw7j1KBTbJCa94nUqVWQ$PfSRXXzpKcf2/uxqF7mLQ+ZyngG3yqcMPqtiidehmiM",Phạm Đức Minh,0362919979,USER,ACTIVE
+minhpg.b24kd057@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$oB6+8wSlQu7p1a+CF/LDZw$6mNOA00H7M/sQQtKLsa8FIk9CGuYu5QRsmACSaZ77pI",Phạm Gia Minh,0939260306,USER,ACTIVE
+nambth.b24kd058@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$9Aw2lx9DTSKERPX1XB6rXg$Yq45oHrbWNJtOwE0DLW0I560ENa5kCD8qHFJjcrskTo",Bùi Trọng Hải Nam,0327476286,USER,ACTIVE
+nampqk.b24kd059@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$r/pBT4iolByHgbrKtRyeYw$yrxzWIT7qXbPzW135KMLZgCovqcX1eRjvlaobGt7BpI",Phùng Quốc Khánh Nam,0815116198,USER,ACTIVE
+nghiadt.b24kd060@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$wDn0xZ+IoYTJko73asHkyQ$Ulru/vxA6+3eesgU/DreU4Lbhzx1nyeBh+35cwxUMUE",Đỗ Trọng Nghĩa,0836443099,USER,ACTIVE
+nghiand.b24kd061@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$60QeSbllKiZCU+XwtTGQAg$aa09gQzov/XvwiqYzAck5/PWuDONIwFXUtAsX+EbXLw",Nguyễn Đức Nghĩa,0967167596,USER,ACTIVE
+nghiatd.b24kd062@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$mSBfO80BdpY21ss5ArWoSg$nI1GcgfKFvavqiKCmj9+mQNg4BtJpE2jD/5izfzpBjE",Trần Đức Nghĩa,0334956582,USER,ACTIVE
+nguyennh.b24kd064@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$trALNWCfICzXYJkCinZnTg$flwjU3Dj7MYHVHXASDt6C02HrxKgJ5jWg4Y+VicYjtc",Nguyễn Hữu Nguyên,0985097363,USER,ACTIVE
+nhuntq.b24kd065@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$hVaUlNXhHy4v542DrPfkGg$Uuk55k44v5XdJYB9ox+4FYxiVLAMxJ4Ebq7iPm09/js",Nguyễn Thị Quỳnh Như,0352067840,USER,ACTIVE
+phucltt.b24kd066@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$J++s0FBReNeHza9yzd0pGw$0eVpkx3YaxET4hW6tNHuhtsNySKocwZzavdH6yAGSNw",Lê Trần Thiên Phúc,0916517908,USER,ACTIVE
+phuongdt.b24kd067@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$eKdJ0EBkFZ6XRoN3hdA3JQ$cf8n9yLHFoIPADDRnqw2JTeAGJv9xvMzKHix1s7oGN8",Đặng Thu Phương,0963948206,USER,ACTIVE
+phuongpm.b24kd068@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$VllSurBadr0BbLSKhGGnzw$zbdbpkgvVmMb+wdUkVT6dweLAmGyO/G3+Is3DSYDqJo",Phạm Minh Phương,0332179626,USER,ACTIVE
+quandh.b24kd069@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$ihQsed9d6OFle4aWlmfnWw$0qWaKkeSdNV17QknbVIARG29qnJ9doNS/2MmtdeXZSQ",Đoàn Hồng Quân,0964886693,USER,ACTIVE
+quanlm.b24kd070@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$AtNOeGe+I2phv7MdK/HRhA$gPFAbe5U0PcMS8ZhROy+sfR3X9RtFWoMG3Hzd6uvRT0",Lương Minh Quân,0985768345,USER,ACTIVE
+quantm.b24kd072@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$MjBi9X1fWDuOzlGvccqZ8A$jdlJbdmkk3IeME5bRYMmzuegoyXumP8A81QxnRtXMDY",Tô Minh Quân,0363327353,USER,ACTIVE
+quangnh.b24kd073@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$ajYwIffLIOfZPb0kHRMmBA$E1dA2yO0oL4uc5xjkNvzl2UqPsQc5s0LQqIQhBwdggs",Ngô Hào Quang,0988594877,USER,ACTIVE
+quangnt.b24kd074@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$lgwaXClN1y3gyT+r6iWDww$eAjWmeropDSoXj7rph8PJmNuhR0wKmMwdcMbdkli4sg",Nguyễn Tiến Quang,0339768259,USER,ACTIVE
+quynhptt.b24kd076@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$HYks0+ykrYeHjGiB1eyeSQ$xKU8PshNSHjeOC1rrA/d7Rv35HOGxpV8H3H7P+X9cT8",Phạm Thị Trúc Quỳnh,0986518783,USER,ACTIVE
+sangdt.b24kd077@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$WqY5OzJgi5SPQqU6Iskwzw$f4wwvEaqZUcKVowWNc/FutERo35jY0yP1Aw0hgypyoM",Đinh Tiến Sang,0562189236,USER,ACTIVE
+sangnv.b24kd078@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$fFBITRc+c8JLvJgiCAKZBA$QJW3lvgfDVC+QfXqMAo7uRM2///GNa34oTRiL//QV3w",Nguyễn Viết Sáng,0389232006,USER,ACTIVE
+sonlh.b24kd079@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$oC1rTkuX+771XQKt52qQbw$H2aVyoM7ASInFEkE8sEdjwjHoj8SXrXOZjNUXTicdAg",Lê Hải Sơn,0964862652,USER,ACTIVE
+sonnh.b24kd080@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$vBpOArMfLzy5OwJK63jl8g$QXBonmBojbbvTkxRYgEeK8pMlSF9RUnDWadbR14TlKA",Nguyễn Hồng Sơn,0987866358,USER,ACTIVE
+tamnd.b24kd081@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$38Oe1jymRgmS6pJtR5WJRg$R3hDPidy0Lv3wGC7Ip8Cvmj7U4gGfzrzqbsPznwq2kk",Ngô Đình Tâm,0904884300,USER,ACTIVE
+thailq.b24kd082@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$6jL7uem05hI8a3/x3gDEWA$yTBAdLT1HdAP/Glv8KQTSKddKo7n0721VyMgsuoTpH8",Lê Quang Thái,0568327644,USER,ACTIVE
+thaind.b24kd083@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$IS86mGOHfNfalTjWlD38Hw$CYDqZbFM5/E5RAUmEtaD7oqFTv+5MD/awauv1bbsXZw",Nguyễn Danh Thái,0344237236,USER,ACTIVE
+thangnd.b24kd084@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$oUhf9rE1jqnNblyhmx1d9w$oHSPwP75X4aVJ15uBLl6ZsjeDoR0slDzMSt2rcITqY0",Nguyễn Đức Thắng,0385913997,USER,ACTIVE
+thanhnd.b24kd085@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$h0PBVqwn36gEfUch79+f6Q$BIxp1Mh86q6tqArxFLAyc5+HSDGuwtE3SHjlUqfD/R8",Nguyễn Đức Thành,0866144719,USER,ACTIVE
+thanhnt.b24kd086@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$xknYQHtyU/iIle5Pudy+XA$qbC6zJZAPEqmQQgyeheT3anxpj9mZqAQuL7kSzAyNxo",Nguyễn Trung Thành,0378286269,USER,ACTIVE
+thanhph.b24kd087@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$CVgsmPS9nJG3ooNf9WOcLg$SfWvxcf9TXlz85aKtw0771lQX9/dLbQvUpEUys0J7qU",Phạm Hoàng Thành,0969086553,USER,ACTIVE
+thanhtd.b24kd088@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$Gb0qylsisaSKqVCdMdEkdQ$sFvu8Dhl06gapgTLsJDoIhCQrK3QoR0BLQmcBjoDBJM",Trần Đăng Thành,0869895218,USER,ACTIVE
+thuvv.b24kd089@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$tAqde9l4oW/VuOipe7Lbiw$UfDXBty14bgiqN/YYTKeG3g1hL/xxpffruyNaqYA9Zc",Vũ Văn Thu,0353253235,USER,ACTIVE
+tiennv.b24kd090@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$8CaegA8/u+KcmXeomS8jHg$NaysyLavIQ4CBQL6vSzSNPGvN0U4QSCZ5Kh0EIjd/WE",Nguyễn Viết Tiến,0385381096,USER,ACTIVE
+trinm.b24kd091@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$OjvwFDe+A6qvupEehUh3iA$8077ZLgyx7qvNFhRofEubbIsFMUqqWcMRjyXKj6JCZE",Nguyễn Minh Trí,0965359025,USER,ACTIVE
+truongnh.b24kd093@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$S7iOgK/Fj8wlawOnYT0oqg$aEvivNOtSzP8NAiWjuc7iGIc/KU5kr4frJv7Nt/+lyQ",Nguyễn Huy Trường,0364083874,USER,ACTIVE
+tuct.b24kd095@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$LIPRvnlZRYXwiSTp2+43wg$ayARaGJTB+HqL2xzKPAgzkT5ZsTZVq7XitCOikNMZUY",Chử Tuấn Tú,0346348882,USER,ACTIVE
+tuna.b24kd096@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$E449pI5wSgCf+tsYN5ezNw$OLsqOdjOXIWkK9nPlhHG6Oi8cVopDAM/h16RAPF6agk",Nguyễn Anh Tú,0337744919,USER,ACTIVE
+tuandna.b24kd097@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$/h0uKdmlj8cqkBY6xiwWhg$f22Dc6ipKpF6/HFSplrSeUKwk36QcTTju4vP6GNTlFY",Đặng Ngô Anh Tuấn,0336628909,USER,ACTIVE
+tuandm.b24kd098@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$HDHhtlm4Mn7WA7PCvbz+Eg$fIyjlP+/otkxgncfLWNCOk1ZTOqskYSBSzq40lgOLhE",Đỗ Minh Tuấn,0987012509,USER,ACTIVE
+tuyetvta.b24kd099@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$PqaUKAum/1qVFy44pPfaBA$XD95oG1AaS1B3YWiCddBGOA5A86XxHeKBUJRcnpkuro",Vũ Thị Ánh Tuyết,0353921404,USER,ACTIVE
+uyendtt.b24kd100@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$j8fcz+J2yArYMw42Iws1mA$LzpLN83T08T2N7NPr+37ZEPe509Un9D0KJ338MdsQYQ",Đào Thị Tố Uyên,0838148661,USER,ACTIVE
+vinty.b24kd101@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$YJsJhGjmYKFiOEGt9TTKJg$H8oLV2rl0D3WIrfWjKNRobTF1ZkSPWyvO/xZjy9chC8",Nguyễn Thị Yến Vi,0979824151,USER,ACTIVE
+vinhpq.b24kd102@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$8D7Y+KglrNtl6mQ31bdw5Q$BSlEfGTjPYQ5sbQNuYWXkxTsBgMTZREmbcdWRotyl14",Phạm Quang Vinh,0362606103,USER,ACTIVE
+vund.b24kd103@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$xTLKuX1YR5icrmPoM1E7bQ$2bzc2g1jNSJWc7jhyTzthJaR4J/5fBuDRua2xLxnShc",Nguyễn Đức Vũ,0329977644,USER,ACTIVE
+vyda.b24kd104@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$bjQPi5Q6/tB4cIpUIYLMHA$cRdfv1KOE0YmP1E8pMmFOnUzZ33GpPOZ4N8o6i0/L2E",Đỗ Ánh Vy,0787495198,USER,ACTIVE
+vypb.b24kd105@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$UuBJOFJxXHI06Ifccr/vSA$Ut6xY50ZdB9t6jAEdexNf0EPfJIjFu5LxmHARZRKea8",Phương Bảo Vỹ,0396282536,USER,ACTIVE
+yennh.b24kd106@stu.ptit.edu.vn,"$argon2id$v=19$m=19456,t=2,p=1$xNLnOHmrD74diigp/9elZw$+hUOe8ze4DNiEP6sQVVxdMK+Zobi6l4zc8IN9fPL67U",Nguyễn Hải Yến,0866955029,USER,ACTIVE

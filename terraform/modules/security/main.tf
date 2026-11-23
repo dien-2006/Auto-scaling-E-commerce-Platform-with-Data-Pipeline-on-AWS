@@ -131,6 +131,22 @@ resource "aws_vpc_security_group_ingress_rule" "worker_internal" {
 
 # 4.4. Kubernetes Control Plane Security Group Rules
 
+# Monitoring Pods on workers scrape kubelet and node-exporter on the control plane.
+# No public CIDR access; worker-to-worker traffic already uses worker_internal.
+resource "aws_vpc_security_group_ingress_rule" "control_plane_monitoring" {
+  for_each = {
+    kubelet       = 10250
+    node_exporter = 9100
+  }
+
+  security_group_id            = aws_security_group.control_plane.id
+  referenced_security_group_id = aws_security_group.worker.id
+  from_port                    = each.value
+  to_port                      = each.value
+  ip_protocol                  = "tcp"
+  description                  = "${each.key} metrics from Kubernetes workers"
+}
+
 resource "aws_vpc_security_group_ingress_rule" "control_plane_api_from_worker" {
   security_group_id = aws_security_group.control_plane.id
 

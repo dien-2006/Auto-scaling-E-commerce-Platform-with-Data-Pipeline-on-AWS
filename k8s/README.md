@@ -4,9 +4,14 @@ This folder is Kubernetes workload configuration, NOT AWS infrastructure.
 Terraform owns the EC2 control plane, worker ASG, ALB, S3, ECR, RDS and IAM.
 Use a separate kubeconfig/context for dev and prod clusters.
 
+**Dev hiện tại:** dùng [luồng local → ECR → SSM → Kubernetes](overlays/dev/README.md).
+Luồng này không yêu cầu kubeconfig admin trên local. Overlay là template, không apply
+nguyên trạng khi còn `ACCOUNT_ID` hoặc `REPLACE_*`. RDS phải có schema được chủ dự án
+chuẩn bị thủ công; script web không tạo bảng hoặc chuyển dữ liệu.
+
 ## Hướng dẫn theo thư mục
 
-Các lệnh bên dưới chạy từ **gốc repo**. Cần `kubectl`, Helm, context `coco-dev`/`coco-prod` và đường mạng tới Kubernetes API private. Không có lệnh build ứng dụng trong repo vì chưa có source/Dockerfile ứng dụng.
+Các lệnh bên dưới chạy từ **gốc repo**. Cần `kubectl`, Helm, context `coco-dev`/`coco-prod` và đường mạng tới Kubernetes API private. Backend/frontend đã có Dockerfile; cần build/push image riêng trước khi triển khai workload.
 
 | Phần | Hướng dẫn |
 | --- | --- |
@@ -83,50 +88,33 @@ kubectl --context coco-dev get svc,hpa,pdb -n coco
 ```
 Use a separate `coco-prod` context and `k8s/overlays/prod` for prod.
 
-## 3. Install Cluster Autoscaler via Helm
-The official autoscaler chart supports AWS ASG tag auto-discovery. Values now match Terraform's ASG tags: `ecommerce-dev-k8s` and `ecommerce-prod-k8s`. These cluster names are separate from local kubeconfig context names (`coco-dev` and `coco-prod`).
+## 3. Install Cluster Autoscaler
 
-Before installing the chart, verify the following infrastructure prerequisites; installing this Helm chart does not supply them:
+**Dev: use [the current autoscaling runbook](autoscaling/RUNBOOK-dev.md). It supplies
+the dedicated IAM role, future-worker bootstrap update, pinned v1.34.6 manifest
+and SSM install/status/demo tasks. Worker floor is two, maximum four. Do not install
+an additional Helm controller from the legacy values files.**
 
-- The identity used by the Autoscaler can read ASG/EC2 metadata and change only this cluster's worker ASG. The current Terraform worker role grants SSM/ECR/bootstrap access, not the required ASG scaling actions.
-- Nodes expose AWS provider IDs (`aws:///AZ/INSTANCE_ID`) so the Autoscaler can associate them with EC2 instances. The current kubeadm bootstrap does not configure these explicitly.
-- If the pod uses an EC2 role, IMDS credentials must be reachable from the pod. Terraform requires IMDSv2; do not assume a normal pod can use instance credentials with the default hop limit. Use a suitable dedicated identity or deliberately configured placement/networking.
-- The Autoscaler image version matches Kubernetes 1.34, and outbound AWS API connectivity works.
-
-See the [upstream AWS Autoscaler prerequisites](https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/cloudprovider/aws/README.md). This change fixes Kubernetes configuration names and leaves AWS architecture/IAM unchanged.
-
-```bash
-helm repo add autoscaler https://kubernetes.github.io/autoscaler
-helm repo update
-helm --kube-context coco-dev upgrade --install cluster-autoscaler   autoscaler/cluster-autoscaler   --namespace kube-system -f k8s/autoscaling/values-dev.yaml   --set image.tag=v1.34.0
-kubectl --context coco-dev -n kube-system get deploy -l app.kubernetes.io/instance=cluster-autoscaler
-```
-
-**Version note:** The image tag is an example for a Kubernetes v1.34 cluster; verify the exact matching supported patch and chart version. This self-managed kubeadm cluster also needs an appropriate AWS integration/provider-id and IAM; the Helm command alone will not activate AWS autoscaling.
+The current procedure targets dev only. Production needs a separate IAM/storage/AZ
+review; installing a chart alone does not supply those prerequisites.
 
 ## 4. Install Prometheus + Grafana via Helm
-This sample uses ephemeral monitoring storage. Production must configure a functioning persistent StorageClass (e.g. EBS CSI) before turning on PVCs, otherwise dashboards/data are lost on rescheduling.
 
-```bash
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-helm repo update
-kubectl --context coco-dev create namespace monitoring --dry-run=client -o yaml | kubectl --context coco-dev apply -f -
-# Create grafana-admin Secret in monitoring first using a secure method
-helm --kube-context coco-dev upgrade --install monitoring   prometheus-community/kube-prometheus-stack   --namespace monitoring -f k8s/monitoring/values-dev.yaml
-kubectl --context coco-dev -n monitoring port-forward svc/monitoring-grafana 3001:80
-```
+Follow the [monitoring guide](monitoring/README.md) in order: inspect the cluster and EBS CSI, validate code/rendered manifests, prepare Grafana and SMTP Secrets, then install the pinned chart and application monitors. Persistence is enabled and requires working EBS CSI/IAM; installation can provision billable EBS volumes. No database migrations are part of these steps. Grafana uses local port 3002 to avoid the local frontend port.
+
+Production values are overrides: pass `values-dev.yaml` followed by `values-prod.yaml`. See the guide for the kubelet certificate prerequisite; do not install production using its override file alone.
 
 ## 5. Test autoscaling
 ```bash
 kubectl --context coco-dev -n coco get hpa -w
 kubectl --context coco-dev get nodes -w
-kubectl --context coco-dev -n kube-system logs -l app.kubernetes.io/instance=cluster-autoscaler --all-containers=true --tail=100
+kubectl --context coco-dev -n kube-system logs deployment/cluster-autoscaler --tail=100
 ```
 For a true autoscaling demo, use k6 to increase application CPU usage, verify HPA adds pods, then verify Pending unschedulable pods prompt Cluster Autoscaler to increase the worker ASG. HPA CPU decisions require Metrics Server and appropriate CPU requests.
 
 ## Notes
-- Deployments use example frontend port 80 and backend 3000 `/health`: align with the real Docker images.
-- `/api/*` ALB routing is handled by Terraform. If frontend needs browser API requests, use `/api` via same ALB domain.
+- Deployments use frontend port 3000 and backend port 8000; backend probes use `/health/live` and `/health/ready`, matching the Docker images.
+- All public web paths, including `/api/*`, route to Next.js through ALB. Next proxies approved API routes to the internal backend Service; browser traffic must not bypass that proxy.
 - Not a fully HA control plane: single EC2 control-plane is a single point of failure.
 - For real multi-AZ resilience, confirm subnet placement, node labels, storage and AZ topology requirements; `topologySpreadConstraints` here use `ScheduleAnyway` preference.
 - Prometheus/Grafana are installed in Kubernetes, not Terraform. Glue ETL is separate from this folder.

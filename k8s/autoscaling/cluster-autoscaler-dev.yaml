@@ -1,0 +1,217 @@
+# kubeadm dev, Kubernetes/Cluster Autoscaler minor 1.34. Render before applying.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coco-autoscaler-aws-config
+  namespace: kube-system
+data:
+  config: |
+    [profile coco-cluster-autoscaler]
+    role_arn = REPLACE_AUTOSCALER_ROLE_ARN
+    credential_source = Ec2InstanceMetadata
+    region = ap-southeast-1
+    role_session_name = coco-dev-cluster-autoscaler
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cluster-autoscaler
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: coco-cluster-autoscaler
+rules:
+  - apiGroups: ['']
+    resources: [events]
+    verbs: [create, patch]
+  - apiGroups: ['']
+    resources: [pods/eviction]
+    verbs: [create]
+  - apiGroups: ['']
+    resources: [pods/status]
+    verbs: [update]
+  - apiGroups: ['']
+    resources: [nodes]
+    verbs: [get, list, watch, create, update, delete]
+  - apiGroups: ['']
+    resources: [configmaps]
+    verbs: [get, list, watch]
+  - apiGroups: ['']
+    resources: [namespaces, pods, services, replicationcontrollers, persistentvolumeclaims, persistentvolumes]
+    verbs: [get, list, watch]
+  - apiGroups: [apps]
+    resources: [statefulsets, replicasets, daemonsets]
+    verbs: [get, list, watch]
+  - apiGroups: [policy]
+    resources: [poddisruptionbudgets]
+    verbs: [get, list, watch]
+  - apiGroups: [storage.k8s.io]
+    resources: [storageclasses, csinodes, csidrivers, csistoragecapacities, volumeattachments]
+    verbs: [get, list, watch]
+  - apiGroups: [batch]
+    resources: [jobs]
+    verbs: [get, list, watch, patch]
+  - apiGroups: [batch]
+    resources: [cronjobs]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: coco-cluster-autoscaler
+  namespace: kube-system
+rules:
+  - apiGroups: ['']
+    resources: [configmaps]
+    verbs: [create, list, watch]
+  - apiGroups: ['']
+    resources: [configmaps]
+    resourceNames: [cluster-autoscaler-status, cluster-autoscaler-priority-expander]
+    verbs: [get, update, delete, watch]
+  - apiGroups: [coordination.k8s.io]
+    resources: [leases]
+    verbs: [create]
+  - apiGroups: [coordination.k8s.io]
+    resources: [leases]
+    resourceNames: [cluster-autoscaler]
+    verbs: [get, update]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: coco-cluster-autoscaler
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: coco-cluster-autoscaler
+subjects:
+  - kind: ServiceAccount
+    name: cluster-autoscaler
+    namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: coco-cluster-autoscaler
+  namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: coco-cluster-autoscaler
+subjects:
+  - kind: ServiceAccount
+    name: cluster-autoscaler
+    namespace: kube-system
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cluster-autoscaler
+  namespace: kube-system
+  labels:
+    app: cluster-autoscaler
+    coco.dev/managed-by: scripts
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: cluster-autoscaler
+  template:
+    metadata:
+      labels:
+        app: cluster-autoscaler
+      annotations:
+        cluster-autoscaler.kubernetes.io/safe-to-evict: 'false'
+    spec:
+      serviceAccountName: cluster-autoscaler
+      priorityClassName: system-cluster-critical
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: ''
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: cluster-autoscaler
+          image: registry.k8s.io/autoscaling/cluster-autoscaler:v1.34.6
+          imagePullPolicy: IfNotPresent
+          command:
+            - ./cluster-autoscaler
+            - --cloud-provider=aws
+            - --nodes=2:4:ecommerce-dev-worker-asg
+            - --aws-use-static-instance-list=true
+            - --namespace=kube-system
+            - --leader-elect=true
+            - --leader-elect-resource-name=cluster-autoscaler
+            - --scale-down-delay-after-add=10m
+            - --scale-down-unneeded-time=10m
+            - --scale-down-unready-time=20m
+            - --max-node-provision-time=30m
+            - --max-scale-down-parallelism=1
+            - --skip-nodes-with-system-pods=true
+            - --skip-nodes-with-local-storage=true
+            - --v=4
+          env:
+            - name: AWS_REGION
+              value: ap-southeast-1
+            - name: AWS_DEFAULT_REGION
+              value: ap-southeast-1
+            - name: AWS_PROFILE
+              value: coco-cluster-autoscaler
+            - name: AWS_CONFIG_FILE
+              value: /etc/coco-aws/config
+            - name: AWS_SDK_LOAD_CONFIG
+              value: '1'
+            - name: AWS_STS_REGIONAL_ENDPOINTS
+              value: regional
+          ports:
+            - name: health
+              containerPort: 8085
+          resources:
+            requests:
+              cpu: 100m
+              memory: 300Mi
+            limits:
+              cpu: 500m
+              memory: 600Mi
+          livenessProbe:
+            httpGet:
+              path: /health-check
+              port: health
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /health-check
+              port: health
+            initialDelaySeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: aws-config
+              mountPath: /etc/coco-aws
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: aws-config
+          configMap:
+            name: coco-autoscaler-aws-config
+        - name: tmp
+          emptyDir: {}

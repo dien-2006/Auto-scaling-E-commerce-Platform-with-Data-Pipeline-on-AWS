@@ -81,6 +81,7 @@ def wait_for_workflow(glue, workflow, run_id, expected_jobs,
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--run-id", help="Watch an existing run instead of starting another batch")
     parser.add_argument(
         "--watch", action="store_true", help="Monitor extract and transform to completion",
     )
@@ -94,8 +95,11 @@ def main():
 
     aws = AWSClients()
     settings = aws.settings
-    response = aws.glue.start_workflow_run(Name=settings.workflow)
-    run_id = response["RunId"]
+    if args.run_id:
+        run_id = args.run_id
+    else:
+        response = aws.glue.start_workflow_run(Name=settings.workflow)
+        run_id = response["RunId"]
     print(f"Workflow: {settings.workflow}")
     print(f"Run ID: {run_id}")
 

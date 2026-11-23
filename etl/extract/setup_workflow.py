@@ -1,13 +1,17 @@
 
 import argparse
+import sys
 import time
 
+from botocore.exceptions import BotoCoreError, ClientError
 from common.aws_clients import AWSClients
 
 
 def ensure_workflow(glue, name):
     try:
-        glue.get_workflow(Name=name)
+        workflow = glue.get_workflow(Name=name)["Workflow"]
+        if workflow.get("MaxConcurrentRuns") != 1:
+            glue.update_workflow(Name=name, MaxConcurrentRuns=1)
         print(f"Workflow exists: {name}")
 
     except glue.exceptions.EntityNotFoundException:
@@ -122,8 +126,61 @@ def ensure_disabled(glue, name):
     print(f"Deactivated: {name}")
 
 
-def main():
+def wait_for_trigger_deleted(glue, name, timeout_seconds=180):
+    deadline = time.monotonic() + timeout_seconds
+    while True:
+        try:
+            glue.get_trigger(Name=name)
+        except glue.exceptions.EntityNotFoundException:
+            return
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError(f"Trigger {name} is still visible after deletion")
+        time.sleep(min(2, remaining))
+
+
+def ensure_start_trigger(glue, workflow, prefix, extract_job, schedule,
+                         scheduled=False, replace=False):
+    """A workflow gets ONE starting trigger. Replacement is explicit and guarded."""
+    name = f"{prefix}-{'scheduled' if scheduled else 'manual'}-extract"
+    other_name = f"{prefix}-{'manual' if scheduled else 'scheduled'}-extract"
+    try:
+        old = glue.get_trigger(Name=other_name)["Trigger"]
+    except glue.exceptions.EntityNotFoundException:
+        old = None
+    if old is not None:
+        expected_type = "ON_DEMAND" if scheduled else "SCHEDULED"
+        if (old.get("WorkflowName") != workflow or old.get("Type") != expected_type or
+                old.get("Actions") != [{"JobName": extract_job}]):
+            raise RuntimeError(f"Refusing to replace unrelated trigger {other_name}")
+        if not replace:
+            raise RuntimeError(
+                f"Workflow already has start trigger {other_name}. "
+                "Use --replace-start-trigger to replace only this owned trigger; no job/data is deleted."
+            )
+        for page in glue.get_paginator("get_workflow_runs").paginate(Name=workflow):
+            if any(run.get("Status") in {"RUNNING", "STOPPING"} for run in page.get("Runs", [])):
+                raise RuntimeError("Workflow is active; refusing to replace its start trigger")
+        ensure_disabled(glue, other_name)
+        # Recheck after disabling the schedule so a run starting during that
+        # transition cannot lose its originating trigger.
+        for page in glue.get_paginator("get_workflow_runs").paginate(Name=workflow):
+            if any(run.get("Status") in {"RUNNING", "STOPPING"} for run in page.get("Runs", [])):
+                raise RuntimeError("Workflow started during schedule deactivation; wait for completion")
+        glue.delete_trigger(Name=other_name)
+        wait_for_trigger_deleted(glue, other_name)
+        print(f"Removed owned start trigger: {other_name}")
+    config = {"Actions": [{"JobName": extract_job}]}
+    if scheduled:
+        config["Schedule"] = schedule
+    ensure_trigger(glue, name, "SCHEDULED" if scheduled else "ON_DEMAND", config, workflow)
+    return name
+
+
+def configure():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--replace-start-trigger", action="store_true",
+                        help="Explicitly replace the owned inactive start trigger when changing mode; never deletes jobs/data")
 
     parser.add_argument(
         "--enable-schedule",
@@ -148,6 +205,10 @@ def main():
     glue = aws.glue
     settings = aws.settings
 
+    if (args.enable_schedule and settings.environment == "dev" and
+            settings.schedule != "cron(0 18 * * ? *)"):
+        raise ValueError("Dev schedule must be 01:00 Vietnam: cron(0 18 * * ? *). Refresh the reviewed Terraform output/config first")
+
     # Verify Terraform-created Glue jobs.
     for job_name in (
         settings.extract_job,
@@ -159,35 +220,12 @@ def main():
 
     prefix = f"coco-{settings.environment}"
 
-    scheduled_name = f"{prefix}-scheduled-extract"
-    manual_name = f"{prefix}-manual-extract"
     conditional_name = f"{prefix}-conditional-transform"
 
-    # 1. Daily schedule
-    ensure_trigger(
-        glue,
-        scheduled_name,
-        "SCHEDULED",
-        {
-            "Schedule": settings.schedule,
-            "Actions": [
-                {"JobName": settings.extract_job}
-            ],
-        },
-        settings.workflow,
-    )
-
-    # 2. Manual start
-    ensure_trigger(
-        glue,
-        manual_name,
-        "ON_DEMAND",
-        {
-            "Actions": [
-                {"JobName": settings.extract_job}
-            ],
-        },
-        settings.workflow,
+    # Scheduled and on-demand triggers cannot both start the same workflow.
+    start_name = ensure_start_trigger(
+        glue, settings.workflow, prefix, settings.extract_job, settings.schedule,
+        scheduled=args.enable_schedule, replace=args.replace_start_trigger,
     )
 
     # 3. Conditional transform
@@ -197,8 +235,10 @@ def main():
         "CONDITIONAL",
         {
             "Predicate": {
+                "Logical": "AND",
                 "Conditions": [
                     {
+                        "LogicalOperator": "EQUALS",
                         "JobName": settings.extract_job,
                         "State": "SUCCEEDED",
                     }
@@ -214,13 +254,19 @@ def main():
     ensure_active(glue, conditional_name)
 
     if args.enable_schedule:
-        ensure_active(glue, scheduled_name)
-
-    elif args.disable_schedule:
-        ensure_disabled(glue, scheduled_name)
+        ensure_active(glue, start_name)
 
     print("COCO workflow configuration completed.")
 
 
+def main():
+    try:
+        configure()
+        return 0
+    except (BotoCoreError, ClientError, RuntimeError, ValueError, TimeoutError) as exc:
+        print(f"Workflow setup failed: {exc}", file=sys.stderr)
+        return 1
+
+
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

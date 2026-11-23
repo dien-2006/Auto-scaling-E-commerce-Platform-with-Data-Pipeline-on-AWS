@@ -7,7 +7,10 @@ from dotenv import load_dotenv
 
 ETL_ROOT = Path(__file__).resolve().parents[1]
 
-load_dotenv(ETL_ROOT / ".env")
+CONFIG_FILE = os.getenv("COCO_ETL_ENV_FILE")
+# An explicitly selected Terraform-generated configuration is authoritative.
+# The legacy etl/.env retains the usual environment-variable precedence.
+load_dotenv(CONFIG_FILE or ETL_ROOT / ".env", override=bool(CONFIG_FILE))
 
 
 def required(name: str) -> str:

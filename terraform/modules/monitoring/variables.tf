@@ -26,8 +26,8 @@ variable "alb_arn_suffix" {
   type        = string
 }
 
-variable "backend_target_group_arn_suffix" {
-  description = "Backend Target Group ARN suffix"
+variable "web_target_group_arn_suffix" {
+  description = "Public Next.js target group; backend service requests are observed by Prometheus."
   type        = string
 }
 
@@ -47,7 +47,7 @@ variable "alb_5xx_threshold" {
 }
 
 variable "backend_latency_threshold" {
-  description = "Backend p95 latency threshold in seconds"
+  description = "Public web p95 latency threshold in seconds (legacy variable name retained)"
   type        = number
   default     = 2
 }

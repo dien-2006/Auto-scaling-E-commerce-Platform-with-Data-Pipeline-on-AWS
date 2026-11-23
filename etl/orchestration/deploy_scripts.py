@@ -30,12 +30,18 @@ def main():
 
     # Check all jobs and destinations before uploading.
     targets = []
+    aws.s3.head_bucket(Bucket=settings.bucket, ExpectedBucketOwner=settings.account_id)
 
     for job_name, local_path in scripts.items():
         if not local_path.is_file():
             raise FileNotFoundError(local_path)
 
         response = aws.glue.get_job(JobName=job_name)
+        if response["Job"].get("ExecutionProperty", {}).get("MaxConcurrentRuns") != 1:
+            raise RuntimeError(f"Apply the reviewed Terraform job configuration first: {job_name}")
+        runs = aws.glue.get_job_runs(JobName=job_name, MaxResults=1).get("JobRuns", [])
+        if any(run.get("JobRunState") in {"STARTING", "RUNNING", "STOPPING", "WAITING"} for run in runs):
+            raise RuntimeError(f"Job {job_name} is still active; do not replace its script")
 
         script_uri = response["Job"]["Command"]["ScriptLocation"]
 
@@ -62,6 +68,7 @@ def main():
             key,
             ExtraArgs={
                 "ServerSideEncryption": "AES256",
+                "ExpectedBucketOwner": settings.account_id,
             },
         )
 

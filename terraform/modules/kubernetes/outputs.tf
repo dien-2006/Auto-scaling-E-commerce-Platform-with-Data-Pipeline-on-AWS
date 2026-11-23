@@ -19,6 +19,11 @@ output "worker_launch_template_id" {
   value = aws_launch_template.worker.id
 }
 
+output "worker_bootstrap_base64" {
+  description = "Current source bootstrap; evaluated with terraform console, not an old applied user_data attribute"
+  value       = local.worker_user_data_base64
+}
+
 output "join_parameter_name" {
   value = local.join_parameter_name
 }

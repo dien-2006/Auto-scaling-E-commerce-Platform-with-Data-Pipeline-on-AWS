@@ -49,8 +49,36 @@ output "images_bucket_name" {
   value = module.storage.images_bucket_name
 }
 
+output "images_bucket_region" {
+  value = var.aws_region
+}
+
+output "image_prefixes" {
+  value = module.storage.image_prefixes
+}
+
+output "image_upload_origins" {
+  value = module.storage.image_upload_origins
+}
+
 output "etl_bucket_name" {
   value = module.storage.etl_bucket_name
+}
+
+output "etl_config" {
+  description = "Non-secret ETL settings consumed by the owner-run dev scripts"
+  value = {
+    COCO_ENV           = local.environment
+    AWS_REGION         = var.aws_region
+    AWS_ACCOUNT_ID     = module.etl.aws_account_id
+    ETL_BUCKET         = module.etl.etl_bucket_name
+    GLUE_EXTRACT_JOB   = module.etl.extract_job_name
+    GLUE_TRANSFORM_JOB = module.etl.transform_job_name
+    GLUE_WORKFLOW      = "${local.project_name}-${local.environment}-pipeline"
+    ATHENA_DATABASE    = module.etl.catalog_database_name
+    ATHENA_WORKGROUP   = module.etl.athena_workgroup_name
+    GLUE_SCHEDULE      = "cron(0 18 * * ? *)" # 01:00 Asia/Ho_Chi_Minh the following day
+  }
 }
 output "ecr_frontend_url" {
   value = module.ecr.frontend_repository_url

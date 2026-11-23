@@ -1,11 +1,11 @@
 
 output "images_bucket_name" {
-  description = "S3 bucket for product images"
+  description = "Private S3 bucket for product images and shop logos"
   value       = aws_s3_bucket.main["images"].bucket
 }
 
 output "images_bucket_arn" {
-  description = "Product images bucket ARN"
+  description = "Product images and shop logos bucket ARN"
   value       = aws_s3_bucket.main["images"].arn
 }
 
@@ -34,4 +34,19 @@ output "etl_prefixes" {
     temporary      = "tmp/"
     athena_results = "athena-results/"
   }
+}
+
+output "image_prefixes" {
+  description = "Object key contract; these are logical prefixes, not created folders or objects."
+  value = {
+    staging_products = "uploads/"
+    staging_logos    = "uploads/shop-logos/"
+    products         = "product-images/"
+    shop_logos       = "shop-logos/"
+  }
+}
+
+output "image_upload_origins" {
+  description = "Configured browser origins for presigned image uploads"
+  value       = var.image_upload_origins
 }

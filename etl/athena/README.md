@@ -5,13 +5,16 @@
 Từ **thư mục `etl/`**:
 
 ```sh
-python -m athena.create_tables
+python -m athena.create_tables --run-id RUN_ID_THAT
 python -m athena.run_queries --report categories
 python -m athena.run_queries --report shops
 python -m athena.run_queries --report daily
 ```
 
-`create_tables` tạo/cập nhật metadata của ba bảng Parquet trong Glue Catalog; không tạo database, không chạy transform và không tự sinh dữ liệu Gold. `run_queries` gửi query AWS thật và có thể phát sinh phí quét dữ liệu.
+Thay RUN_ID_THAT bằng Workflow Run ID thành công. `create_tables` kiểm tra hai job
+và marker/schema/path/count trước khi tạo/cập nhật metadata ba bảng Glue Catalog,
+Location trỏ đúng batch. Không tạo database/RDS table hoặc dữ liệu demo.
+`run_queries` có phí quét dữ liệu, timeout 600 giây và không tự hủy query khi timeout.
 
 | Report | Bảng |
 | --- | --- |

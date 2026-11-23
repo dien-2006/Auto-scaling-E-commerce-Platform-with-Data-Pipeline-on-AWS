@@ -1,9 +1,25 @@
 
-# Initialize Kubernetes control plane
-kubeadm init \
-  --control-plane-endpoint "$(hostname -I | awk '{print $1}'):6443" \
-  --pod-network-cidr "${pod_cidr}" \
-  --cri-socket unix:///run/containerd/containerd.sock
+# Never initialize over a partially configured control plane.
+if [[ ! -f /etc/kubernetes/admin.conf ]]; then
+  if [[ -f /etc/kubernetes/manifests/kube-apiserver.yaml ]]; then
+    echo "Partial control-plane configuration found; inspect before retrying" >&2
+    exit 1
+  fi
+  kubeadm init \
+    --kubernetes-version "$(kubeadm version -o short)" \
+    --control-plane-endpoint "$(hostname -I | awk '{print $1}'):6443" \
+    --pod-network-cidr "${pod_cidr}" \
+    --cri-socket unix:///run/containerd/containerd.sock
+fi
+export KUBECONFIG=/etc/kubernetes/admin.conf
+
+# kubeadm does not install a Pod network. Match the existing VXLAN SG rules.
+# Pin the manifest release rather than downloading a changing latest version.
+retry curl -fsSL --retry 5 \
+  https://raw.githubusercontent.com/flannel-io/flannel/v0.27.4/Documentation/kube-flannel.yml \
+  -o /var/lib/coco-flannel.yaml
+sed -i 's|10.244.0.0/16|${pod_cidr}|g' /var/lib/coco-flannel.yaml
+retry kubectl apply -f /var/lib/coco-flannel.yaml
 
 # Configure kubectl for ubuntu user
 mkdir -p /home/ubuntu/.kube
@@ -40,10 +56,15 @@ chmod 700 /usr/local/sbin/coco-publish-join.sh
 cat >/etc/systemd/system/coco-join-publisher.service <<'EOF'
 [Unit]
 Description=Refresh Kubernetes worker join command
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=0
 
 [Service]
 Type=oneshot
 ExecStart=/usr/local/sbin/coco-publish-join.sh
+Restart=on-failure
+RestartSec=30
 EOF
 
 cat >/etc/systemd/system/coco-join-publisher.timer <<'EOF'
@@ -61,3 +82,8 @@ EOF
 
 systemctl daemon-reload
 systemctl enable --now coco-join-publisher.timer
+
+# Publish the join command before waiting, so workers can join concurrently.
+kubectl -n kube-flannel rollout status daemonset/kube-flannel-ds --timeout=600s
+kubectl -n kube-system rollout status deployment/coredns --timeout=600s
+echo "Control plane and Pod network bootstrap completed"

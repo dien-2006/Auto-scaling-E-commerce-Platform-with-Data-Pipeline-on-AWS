@@ -1,0 +1,158 @@
+{
+  "uid": "coco-application",
+  "title": "Coco - Application",
+  "schemaVersion": 39,
+  "version": 4,
+  "editable": false,
+  "tags": ["coco", "application"],
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": {"from": "now-1h", "to": "now"},
+  "panels": [
+    {
+      "id": 9, "title": "Throughput frontend / backend (request/giây)", "type": "timeseries",
+      "description": "Hai đường riêng: response HTTP hoàn tất tại frontend và backend mỗi giây, không gồm health/metrics. Frontend gồm trang, API proxy và static assets; một frontend request có thể gọi nhiều backend API. Không cộng hai đường thành tổng người truy cập/ALB request. Frontend cần image có observability preload và ServiceMonitor cổng nội bộ 9091.",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 0, "y": 0, "w": 8, "h": 8},
+      "fieldConfig": {"defaults": {"unit": "reqps", "min": 0}, "overrides": []},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"]}},
+      "targets": [
+        {"refId": "A", "expr": "sum(rate(marketplace_http_requests_total{namespace=\"coco\",job=\"coco-backend\"}[$__rate_interval]))", "legendFormat": "Backend request/s"},
+        {"refId": "B", "expr": "sum(rate(marketplace_frontend_http_requests_total{namespace=\"coco\",job=\"coco-frontend\"}[$__rate_interval]))", "legendFormat": "Frontend request/s"}
+      ]
+    },
+    {
+      "id": 10, "title": "CPU từng Pod (% CPU request)", "type": "timeseries",
+      "description": "Mỗi đường là một Pod trong namespace coco. 100% là dùng hết CPU request khai báo, có thể vượt 100%; không phải phần trăm CPU cả máy. Backend/frontend HPA hiện dùng mục tiêu 60% request; Redis không có HPA. Pod mới cần đủ mẫu scrape trước khi có đường biểu diễn.",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 8, "y": 0, "w": 8, "h": 8},
+      "fieldConfig": {"defaults": {"unit": "percent", "min": 0}, "overrides": []},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"]}},
+      "targets": [{"refId": "A", "expr": "100 * sum by (namespace, pod) (rate(container_cpu_usage_seconds_total{namespace=\"coco\",container=~\"backend|frontend|redis\"}[$__rate_interval])) / (sum by (namespace, pod) (kube_pod_container_resource_requests{namespace=\"coco\",container=~\"backend|frontend|redis\",resource=\"cpu\",unit=\"core\"}) > 0)", "legendFormat": "{{pod}}"}]
+    },
+    {
+      "id": 11, "title": "CPU từng worker EC2 (%)", "type": "timeseries",
+      "description": "100 trừ phần trăm idle, trung bình các CPU core trên mỗi worker. Ghép node-exporter với kube_pod_info theo namespace/pod để lấy tên node; loại node đang chạy static Pod kube-apiserver của kubeadm. Tự xuất hiện worker mới khi node-exporter/kube-state-metrics có đủ dữ liệu; không hardcode IP/instance ID.",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 16, "y": 0, "w": 8, "h": 8},
+      "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "max": 100}, "overrides": []},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"]}},
+      "targets": [{"refId": "A", "expr": "(100 * (1 - avg by (namespace, pod) (rate(node_cpu_seconds_total{namespace=\"monitoring\",mode=\"idle\"}[$__rate_interval]))) * on (namespace, pod) group_left (node) max by (namespace, pod, node) (kube_pod_info{namespace=\"monitoring\"})) unless on (node) max by (node) (kube_pod_info{namespace=\"kube-system\",pod=~\"kube-apiserver-.+\"})", "legendFormat": "{{node}}"}]
+    },
+    {
+      "id": 12, "title": "Số Pod mong muốn và sẵn sàng", "type": "timeseries",
+      "description": "Số replica trong spec Deployment so với replica Available của backend/frontend. HPA cập nhật spec khi scale; đường Available có thể chậm hơn khi Pod đang khởi động hoặc chưa vượt readiness probe. Dữ liệu là gauge, không cộng các lần scrape.",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
+      "fieldConfig": {"defaults": {"unit": "short", "min": 0, "decimals": 0, "custom": {"lineInterpolation": "stepAfter"}}, "overrides": []},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"]}},
+      "targets": [
+        {"refId": "A", "expr": "max by (deployment) (kube_deployment_spec_replicas{namespace=\"coco\",deployment=~\"coco-backend|coco-frontend\"})", "legendFormat": "{{deployment}} mong muốn"},
+        {"refId": "B", "expr": "max by (deployment) (kube_deployment_status_replicas_available{namespace=\"coco\",deployment=~\"coco-backend|coco-frontend\"})", "legendFormat": "{{deployment}} sẵn sàng"}
+      ]
+    },
+    {
+      "id": 13, "title": "Số worker Ready", "type": "timeseries",
+      "description": "Tổng node worker có condition Ready=True theo Kubernetes; loại control plane kubeadm qua static Pod kube-apiserver. Không phải ASG desired hoặc tổng instance EC2 Running. Không hardcode tên/IP nên tự phản ánh worker mới khi metrics cập nhật.",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8},
+      "fieldConfig": {"defaults": {"unit": "short", "min": 0, "decimals": 0, "custom": {"lineInterpolation": "stepAfter"}}, "overrides": []},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"]}},
+      "targets": [{"refId": "A", "expr": "sum(max by (node) (kube_node_status_condition{condition=\"Ready\",status=\"true\"}) unless on (node) max by (node) (kube_pod_info{namespace=\"kube-system\",pod=~\"kube-apiserver-.+\"}))", "legendFormat": "Worker Ready"}]
+    },
+    {
+      "id": 14, "title": "Pod Pending và chưa được schedule", "type": "timeseries",
+      "description": "Đếm Pod Pending và Pod có condition Scheduled=False trong coco/scaling-demo. Pending có thể do thiếu tài nguyên, tải image, PVC hoặc ràng buộc placement; cần xem events trước khi kết luận nguyên nhân. Namespace chưa có Pod có thể chưa có series, không thay dữ liệu thiếu bằng số 0 giả.",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 0, "y": 16, "w": 12, "h": 8},
+      "fieldConfig": {"defaults": {"unit": "short", "min": 0, "decimals": 0, "custom": {"lineInterpolation": "stepAfter"}}, "overrides": []},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"]}},
+      "targets": [
+        {"refId": "A", "expr": "sum by (namespace) (max by (namespace, pod) (kube_pod_status_phase{namespace=~\"coco|scaling-demo\",phase=\"Pending\"}))", "legendFormat": "{{namespace}} Pending"},
+        {"refId": "B", "expr": "sum by (namespace) (max by (namespace, pod) (kube_pod_status_scheduled{namespace=~\"coco|scaling-demo\",condition=\"false\"}))", "legendFormat": "{{namespace}} chưa schedule"}
+      ]
+    },
+    {
+      "id": 15, "title": "CPU HPA hiện tại so với mục tiêu", "type": "timeseries",
+      "description": "CPU utilization mà HPA báo trong status, so với CPU target lấy trực tiếp từ spec HPA (hiện là 60%). Đều là % CPU request; không phải % CPU node. Có thể khác biểu đồ cAdvisor vì cửa sổ lấy mẫu, thời điểm cập nhật và cách HPA xử lý Pod mới/thiếu metrics. Vượt mục tiêu không bảo đảm tăng Pod ngay do tolerance, readiness, stabilization và min/max replicas.",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 12, "y": 16, "w": 12, "h": 8},
+      "fieldConfig": {"defaults": {"unit": "percent", "min": 0}, "overrides": [
+        {"matcher": {"id": "byRegexp", "options": ".*mục tiêu$"}, "properties": [
+          {"id": "custom.lineStyle", "value": {"fill": "dash", "dash": [8, 6]}},
+          {"id": "color", "value": {"mode": "fixed", "fixedColor": "orange"}}
+        ]}
+      ]},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"]}},
+      "targets": [
+        {"refId": "A", "expr": "max by (horizontalpodautoscaler) (kube_horizontalpodautoscaler_status_target_metric{namespace=\"coco\",horizontalpodautoscaler=~\"coco-backend-hpa|coco-frontend-hpa\",metric_name=\"cpu\",metric_target_type=\"utilization\"})", "legendFormat": "{{horizontalpodautoscaler}} CPU hiện tại"},
+        {"refId": "B", "expr": "max by (horizontalpodautoscaler) (kube_horizontalpodautoscaler_spec_target_metric{namespace=\"coco\",horizontalpodautoscaler=~\"coco-backend-hpa|coco-frontend-hpa\",metric_name=\"cpu\",metric_target_type=\"utilization\"})", "legendFormat": "{{horizontalpodautoscaler}} mục tiêu"}
+      ]
+    },
+    {
+      "id": 1, "title": "Backend requests / second", "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 0, "y": 24, "w": 12, "h": 8},
+      "fieldConfig": {"defaults": {"unit": "reqps"}, "overrides": []},
+      "targets": [{"refId": "A", "expr": "sum by (route) (rate(marketplace_http_requests_total[5m]))", "legendFormat": "{{route}}"}]
+    },
+    {
+      "id": 2, "title": "Error Rate frontend / backend (HTTP 5xx)", "type": "timeseries",
+      "description": "Tỷ lệ response HTTP 5xx trên tổng response hoàn tất của từng tầng. Không gồm 4xx, request bị hủy trước finish, lỗi JavaScript trình duyệt hoặc check k6 thất bại. Không hiển thị 0 giả khi thiếu toàn bộ metric; khi có counter nhưng không có traffic, tỷ lệ quy ước là 0.",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 12, "y": 24, "w": 12, "h": 8},
+      "fieldConfig": {"defaults": {"unit": "percentunit", "min": 0, "max": 1}, "overrides": []},
+      "targets": [
+        {"refId": "A", "expr": "(sum(rate(marketplace_http_requests_total{namespace=\"coco\",job=\"coco-backend\",status_code=~\"5..\"}[$__rate_interval])) or (0 * sum(rate(marketplace_http_requests_total{namespace=\"coco\",job=\"coco-backend\"}[$__rate_interval])))) / clamp_min(sum(rate(marketplace_http_requests_total{namespace=\"coco\",job=\"coco-backend\"}[$__rate_interval])), 0.001)", "legendFormat": "Backend 5xx"},
+        {"refId": "B", "expr": "(sum(rate(marketplace_frontend_http_requests_total{namespace=\"coco\",job=\"coco-frontend\",status_code=~\"5..\"}[$__rate_interval])) or (0 * sum(rate(marketplace_frontend_http_requests_total{namespace=\"coco\",job=\"coco-frontend\"}[$__rate_interval])))) / clamp_min(sum(rate(marketplace_frontend_http_requests_total{namespace=\"coco\",job=\"coco-frontend\"}[$__rate_interval])), 0.001)", "legendFormat": "Frontend 5xx"}
+      ]
+    },
+    {
+      "id": 3, "title": "P95 latency frontend / backend", "type": "timeseries",
+      "description": "P95 ước lượng từ histogram cộng gộp mọi Pod của từng tầng. Frontend đo từ lúc Node nhận request đến response finish (kể cả streaming/proxy); không phải thời gian tải trang/ảnh trên trình duyệt hoặc latency k6 qua Internet. Không cộng P95 frontend và backend. Không có request trong cửa sổ thì chưa có P95.",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 0, "y": 32, "w": 12, "h": 8},
+      "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []},
+      "targets": [
+        {"refId": "A", "expr": "histogram_quantile(0.95, sum by (le) (rate(marketplace_http_request_duration_seconds_bucket{namespace=\"coco\",job=\"coco-backend\"}[$__rate_interval])))", "legendFormat": "Backend P95"},
+        {"refId": "B", "expr": "histogram_quantile(0.95, sum by (le) (rate(marketplace_frontend_http_request_duration_seconds_bucket{namespace=\"coco\",job=\"coco-frontend\"}[$__rate_interval])))", "legendFormat": "Frontend P95"}
+      ]
+    },
+    {
+      "id": 4, "title": "Internal HTTP probes (1 = healthy)", "type": "timeseries",
+      "description": "Frontend page and backend readiness; not a checkout or public ALB test.",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 12, "y": 32, "w": 12, "h": 8},
+      "fieldConfig": {"defaults": {"min": 0, "max": 1}, "overrides": []},
+      "targets": [{"refId": "A", "expr": "probe_success{job=~\"coco-frontend-probe|coco-backend-ready-probe\"}", "legendFormat": "{{job}}"}]
+    },
+    {
+      "id": 5, "title": "Application CPU cores", "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 0, "y": 40, "w": 12, "h": 8},
+      "targets": [{"refId": "A", "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"coco\",container=~\"backend|frontend\",image!=\"\"}[5m]))", "legendFormat": "{{pod}}"}]
+    },
+    {
+      "id": 6, "title": "Application working set memory", "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 12, "y": 40, "w": 12, "h": 8},
+      "fieldConfig": {"defaults": {"unit": "bytes"}, "overrides": []},
+      "targets": [{"refId": "A", "expr": "sum by (pod) (container_memory_working_set_bytes{namespace=\"coco\",container=~\"backend|frontend\",image!=\"\"})", "legendFormat": "{{pod}}"}]
+    },
+    {
+      "id": 7, "title": "Container restarts over 15 minutes", "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 0, "y": 48, "w": 12, "h": 8},
+      "targets": [{"refId": "A", "expr": "increase(kube_pod_container_status_restarts_total{namespace=\"coco\"}[15m])", "legendFormat": "{{pod}} / {{container}}"}]
+    },
+    {
+      "id": 8, "title": "HPA desired and maximum replicas", "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 12, "y": 48, "w": 12, "h": 8},
+      "targets": [
+        {"refId": "A", "expr": "kube_horizontalpodautoscaler_status_desired_replicas{namespace=\"coco\"}", "legendFormat": "{{horizontalpodautoscaler}} desired"},
+        {"refId": "B", "expr": "kube_horizontalpodautoscaler_spec_max_replicas{namespace=\"coco\"}", "legendFormat": "{{horizontalpodautoscaler}} max"}
+      ]
+    }
+  ]
+}

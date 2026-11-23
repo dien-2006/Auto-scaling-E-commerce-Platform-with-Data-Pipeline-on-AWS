@@ -25,6 +25,8 @@ resource "aws_instance" "control_plane" {
     templatefile("${path.module}/scripts/install-k8s.sh.tftpl", {
       kubernetes_minor_version = var.kubernetes_minor_version
     }),
+    local.ecr_provider_bootstrap,
+    local.node_identity_bootstrap,
     templatefile("${path.module}/scripts/control-plane.sh.tftpl", {
       cluster_name        = var.cluster_name
       pod_cidr            = var.pod_cidr

@@ -56,7 +56,10 @@ def execute_query(aws, sql):
     return response["QueryExecutionId"]
 
 
-def wait_for_query(aws, execution_id):
+def wait_for_query(aws, execution_id, timeout_seconds=600, poll_seconds=2):
+    if timeout_seconds <= 0 or poll_seconds <= 0:
+        raise ValueError("Query timeout and poll interval must be positive")
+    deadline = time.monotonic() + timeout_seconds
     while True:
         response = aws.athena.get_query_execution(
             QueryExecutionId=execution_id
@@ -66,7 +69,7 @@ def wait_for_query(aws, execution_id):
         state = status["State"]
 
         if state == "SUCCEEDED":
-            return
+            return response["QueryExecution"]
 
         if state in ("FAILED", "CANCELLED"):
             reason = status.get(
@@ -77,7 +80,10 @@ def wait_for_query(aws, execution_id):
                 f"Athena {state}: {reason}"
             )
 
-        time.sleep(2)
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError(f"Athena query {execution_id} still running; not cancelled automatically")
+        time.sleep(min(poll_seconds, remaining))
 
 
 def print_results(aws, execution_id):
@@ -107,6 +113,7 @@ def print_results(aws, execution_id):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--timeout-seconds", type=int, default=600)
 
     parser.add_argument(
         "--report",
@@ -115,6 +122,8 @@ def main():
     )
 
     args = parser.parse_args()
+    if args.timeout_seconds <= 0:
+        parser.error("--timeout-seconds must be positive")
 
     aws = AWSClients()
 
@@ -126,9 +135,10 @@ def main():
 
     print(f"Query ID: {execution_id}")
 
-    wait_for_query(
-        aws, execution_id
+    result = wait_for_query(
+        aws, execution_id, timeout_seconds=args.timeout_seconds,
     )
+    print(f"Bytes scanned: {result.get('Statistics', {}).get('DataScannedInBytes', 0)}")
 
     print_results(
         aws, execution_id

@@ -62,6 +62,7 @@ docker-compose.override.yml
 
 # Exported Docker images and release bundles
 /artifacts/docker/
+/artifacts/deploy/
 
 # ============================================================
 # 5. POSTGRESQL / DATABASE
@@ -121,3 +122,8 @@ tmp/
 temp/
 .cache/
 *.tmp
+# Private EC2 deployment settings and TLS private keys.
+.env.ec2
+deploy/ec2/certs/*
+!deploy/ec2/certs/.gitignore
+

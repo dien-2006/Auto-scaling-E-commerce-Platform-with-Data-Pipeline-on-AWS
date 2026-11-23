@@ -11,6 +11,11 @@ python -m orchestration.deploy_scripts
 
 Lệnh thứ hai thực sự ghi AWS: upload `extract/extract_postgres.py` và `transform/transform.py`. Đích upload được lấy từ `Command.ScriptLocation` của từng Glue job, đồng thời kiểm tra bucket đúng `.env` và key thuộc `scripts/`.
 
+Trước upload, xác minh bucket owner, MaxConcurrentRuns=1 và job không có run active.
+Với dev nên chạy `bash scripts/aws/etl-dev.sh setup` từ gốc repo để tắt schedule,
+rồi `bash scripts/aws/etl-dev.sh upload`. Nếu job đang chạy, đợi hoàn tất; không
+upload script mới hoặc khởi chạy batch khác để chữa lỗi.
+
 Terraform hiện cấu hình đích `scripts/extract.py` và `scripts/transform.py`. Không cần đổi tên file Python cục bộ. Việc upload có thể tạo phiên bản object mới do S3 bật versioning; không chạy trên prod với `.env` dev hoặc ngược lại.
 
 Khi cả hai upload thành công, bước tiếp theo là [cấu hình và chạy workflow](../extract/README.md). Script upload không tự khởi chạy job.

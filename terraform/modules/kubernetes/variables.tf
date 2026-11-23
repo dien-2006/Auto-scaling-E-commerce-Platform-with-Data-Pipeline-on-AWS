@@ -88,6 +88,17 @@ variable "root_volume_size" {
   default = 30
 }
 
+variable "worker_imds_hop_limit" {
+  description = "IMDSv2 response hop limit; 2 permits typical Pod networking, with shared node-role exposure."
+  type        = number
+  default     = 1
+
+  validation {
+    condition     = contains([1, 2], var.worker_imds_hop_limit)
+    error_message = "Choose 1 for node-only access or deliberately choose 2 for container access."
+  }
+}
+
 variable "common_tags" {
   type    = map(string)
   default = {}

@@ -1,0 +1,4 @@
+-- WITHDRAWN 2026-11-18: email-only OTP uses Redis.
+-- No SQL migration is needed or authorized for this feature.
+-- Do not apply older copies: no auth_security tables, no nullable email change.
+-- The existing 25 marketplace tables and constraints remain unchanged.

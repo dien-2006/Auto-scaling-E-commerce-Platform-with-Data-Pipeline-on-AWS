@@ -13,7 +13,7 @@ resource "aws_autoscaling_group" "worker" {
 
   launch_template {
     id      = aws_launch_template.worker.id
-    version = "$Latest"
+    version = aws_launch_template.worker.latest_version
   }
 
   tag {

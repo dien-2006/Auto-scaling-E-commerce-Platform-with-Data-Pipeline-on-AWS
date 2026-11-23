@@ -1,5 +1,8 @@
-# For real production durability configure EBS CSI + StorageClass and enable PVCs.
-# This example deliberately leaves persistence disabled until a CSI driver is ready.
+# Overrides: pass values-dev.yaml first, then this file. Single replica, not HA.
+kubelet:
+  serviceMonitor:
+    tlsConfig:
+      insecureSkipVerify: false # requires CA-signed kubelet serving certificates
 grafana:
   admin:
     existingSecret: grafana-admin
@@ -8,16 +11,35 @@ grafana:
   service:
     type: ClusterIP
   persistence:
-    enabled: false
+    enabled: true
+    storageClassName: coco-monitoring-gp3
+    size: 5Gi
 prometheus:
   prometheusSpec:
     retention: 7d
+    retentionSize: 24GB
+    externalLabels:
+      cluster: coco-prod
     resources:
       requests:
-        cpu: 200m
-        memory: 1Gi
-      limits:
+        cpu: 500m
         memory: 2Gi
-    storageSpec: {}
+      limits:
+        memory: 4Gi
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: coco-monitoring-gp3
+          accessModes: [ReadWriteOnce]
+          resources:
+            requests:
+              storage: 30Gi
 alertmanager:
   enabled: true
+  alertmanagerSpec:
+    storage:
+      volumeClaimTemplate:
+        spec:
+          resources:
+            requests:
+              storage: 5Gi
